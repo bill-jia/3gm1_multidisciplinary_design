@@ -8,8 +8,9 @@ int tensometerIn = 0;
 int coilOut = 5;
 int j = 0;
 
+int encoderSamples = 20;
 float k_p, k_i, k_d;
-QList<int> encoder1, encoder2;
+volatile QList<int> encoder1, encoder2;
 int tensiontest[250];
 int tension, displacement, velocity, acceleration;
 int maxDisplacement, timeoutSec;
@@ -48,39 +49,40 @@ void recordEncoder() {
   encoder1.push_back(millis());
 }
 
+
+float calculateFrequency() {
+  float totalDelta = 0;
+  for (int i = 0; i < encoderSamples-1; i++) {
+    totalDelta += encoder1[i+1] - encoder1[i];
+  }
+  float frequency = 1/(totalDelta/(encoderSamples-1)/1000);
+  return frequency;
+}
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < encoderSamples; i++){
     encoder1.push_back(0);
     encoder2.push_back(0);
   }
-  //attachInterrupt(digitalPinToInterrupt(encoder1, recordEncoder, RISING));
-  //Serial.println("Hello World");
-  //Serial.println(j);
+  attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if (j < 250) {
-    readSensors();
-    tensiontest[j]= tension;
-    int i = 0;
-    while (i < 1000) {
-      i++;
-    }
-    motorOn();
-    motorOff();
-    j++;
+  readSensors();
+  int i = 0;
+  while (i < 1000) {
+    i++;
   }
-  else if (j < 500) {
-    //Serial.println(j-250);
-    Serial.println(tensiontest[j-250]);
-    delay(250);
-    j++;
-  }
-  else {
-    exit(0);
-  }
+  motorOn();
+  motorOff();
+  noInterrupts();
+  float f = calculateFrequency();
+  interrupts();
+  Serial.println(f);
+  delay(20);
 }
 
