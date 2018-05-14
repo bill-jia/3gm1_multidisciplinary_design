@@ -6,7 +6,6 @@ int motorOut = 4;
 
 int tensometerIn = 0;
 int coilOut = 5;
-int j = 0;
 
 //CONSTANTS
 int encoderSamples = 20;
@@ -86,12 +85,13 @@ float gaussian(float x, float mean, float variance) {
 }
 
 float modelForce(float v, float d) {
-  float k = 1;
+  float k1 = 1;
+  float k2 = 1;
   float mean1 = 1;
   float mean2 = 2;
   float variance1 = 1;
   float variance2 = 2;
-  return k*v*(gaussian(d, mean1, variance1) + gaussian(d, mean2, variance2));
+  return v*(k1*gaussian(d, mean1, variance1) + k2*gaussian(d, mean2, variance2));
 }
 
 float controller(float modelForce){
