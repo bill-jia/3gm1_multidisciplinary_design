@@ -11,6 +11,8 @@ int coilOut = 5;
 int encoderSamples = 20;
 float e = 2.71828;
 float pi = 3.14159;
+float encoderRadius;
+float encoderSpacing;
 
 // VARIABLES
 float k_p, k_i, k_d;
@@ -18,6 +20,7 @@ volatile QList<int> encoder1, encoder2;
 int tensiontest[250];
 int tension, displacement, velocity, acceleration;
 int maxDisplacement, timeoutSec;
+int encoderTicks = 0;
 
 // SENSORS
 int getEncoder1() {
@@ -39,6 +42,8 @@ void readSensors() {
 void recordEncoder() {
   encoder1.pop_front();
   encoder1.push_back(millis());
+  encoderTicks++;
+  //TBD: Forward and backwards counting
 }
 
 
@@ -66,8 +71,7 @@ float calculateFrequency() {
 }
 
 float calculateSpeed(float frequency) {
-  //TBD
-  return 0;
+  return encoderRadius/(2*pi*frequency);
 }
 
 float calculateDisplacement(float v){
@@ -95,6 +99,10 @@ float modelForce(float v, float d) {
 }
 
 float controller(float modelForce){
+  //TBD
+}
+
+void resetVariables() {
   //TBD
 }
 
