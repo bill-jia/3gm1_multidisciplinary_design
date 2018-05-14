@@ -7,6 +7,10 @@ int motorOut = 4;
 int tensometerIn = 0;
 int coilOut = 5;
 
+const int arraySize = 200;
+int pwmArray[arraySize];
+int i = 0;
+
 //CONSTANTS
 int encoderSamples = 20;
 float e = 2.71828;
@@ -98,6 +102,23 @@ float controller(float modelForce){
   //TBD
 }
 
+int on;
+int prev_time;
+int pwm_value;
+void rising() {
+  on = 1;
+  attachInterrupt(digitalPinToInterrupt(encoderIn2), falling, FALLING);
+  prev_time = micros();
+}
+ 
+void falling() {
+  on = 0;
+  attachInterrupt(digitalPinToInterrupt(encoderIn2), rising, RISING);
+  pwm_value = micros()-prev_time;
+  //Serial.println(pwm_value);
+}
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -105,22 +126,15 @@ void setup() {
     encoder1.push_back(0);
     encoder2.push_back(0);
   }
-  attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);
+  i=0;
+  //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);
+  attachInterrupt(digitalPinToInterrupt(encoderIn2), rising, RISING);
+  int pwmValue = 255;
+  analogWrite(coilOut, pwmValue);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  readSensors();
-  int i = 0;
-  while (i < 1000) {
-    i++;
-  }
-  motorOn();
-  motorOff();
-  noInterrupts();
-  float f = calculateFrequency();
-  interrupts();
-  Serial.println(f);
-  delay(20);
+  Serial.println(pwm_value);
+  delay(250);
 }
 
