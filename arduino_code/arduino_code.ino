@@ -103,7 +103,7 @@ void updateKinematics(float timeIntervalMillis){
     Serial.print(" ");
   }
   Serial.println();
-  acceleration.push_back(calculateAcceleration());
+  acceleration.push_back(calculateAcceleration(timeIntervalMillis));
   acceleration.pop_front();
 }
 
@@ -148,8 +148,11 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  //Stuff in main loop not permanent for now
   readSensors();
-  //Serial.println(tension);
+  Serial.print("Tension: ");
+  Serial.print(tension);
+  Serial.print("\n");
   int i = 0;
   while (i < 1000) {
     i++;
@@ -157,6 +160,6 @@ void loop() {
   motorOn();
   motorOff();
   //Serial.println(displacement[kinematicsSampleNumber-1]);
-  delay(250);
+  delay(100);
 }
 
