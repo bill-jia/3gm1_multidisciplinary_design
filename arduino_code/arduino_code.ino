@@ -153,10 +153,6 @@ void loop() {
   Serial.print("Tension: ");
   Serial.print(tension);
   Serial.print("\n");
-  int i = 0;
-  while (i < 1000) {
-    i++;
-  }
   motorOn();
   motorOff();
   //Serial.println(displacement[kinematicsSampleNumber-1]);

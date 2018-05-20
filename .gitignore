@@ -1,2 +1,5 @@
 *.txt
 *.jpg
+*.txt
+data/*
+l2s2_info/*
