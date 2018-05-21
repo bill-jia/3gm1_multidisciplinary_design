@@ -28,6 +28,11 @@ def pretty_print_POST(req):
 		req.body,
 	))
 
+def print_response(resp):
+	print(resp.status_code)
+	print(resp.headers)
+	print(resp.text)
+
 def get_session():
 	session = requests.Session()
 	session.headers.update({'Authorization': 'X-API-KEY ' + api_key})
@@ -40,35 +45,41 @@ def get_record(id):
 	url = base_url + "/record/read"
 	params = {"record_id": id}
 	resp = s.get(url, params = params)
-	print(resp.status_code)
-	print(resp.headers)
-	print(resp.text)
+	print_response(resp)
 	return 0
 
 
-def create_record(id, first_names, surname, date_of_birth, id_number):
+def create_record(first_names, surname, date_of_birth, id_number):
 	url = base_url + "/record/create"
-	record = {"id" : id, "first_names": first_names, "surname": surname, "date_of_birth": date_of_birth, "id_number": id_number}
+	record = {"record": {"first_names": first_names, "surname": surname, "date_of_birth": date_of_birth, "id_number": id_number}}
 	resp = s.post(url, json=record)
-	print(resp.status_code)
-	print(resp.headers)
-	print(resp.text)
+	print_response(resp)
 	return 0
+
+def update_record(ids, first_names, surname, date_of_birth, id_number):
+	url = base_url + "/record/update"
+	record = {"record": {"id": ids, "first_names": first_names, "surname": surname, "date_of_birth": date_of_birth, "id_number": id_number}}
+	resp = s.post(url, json=record)
+	print_response(resp)
+
+def delete_record(ids):
+	url = base_url + "/record/delete"
+	record_id = {"record_id": ids}
+	resp = s.post(url, json=record_id)
+	print_response(resp)
 
 def search_record(prop, value):
 	url = base_url + "/record/search"
 	payload = {"filters":[{"operator":1, "property":prop, "value":value}]}
 	req = requests.Request()
 	resp = s.post(url, json=payload)
-	print(resp.status_code)
-	print(resp.headers)
-	print(resp.text)
+	print_response(resp)
 
 #params = {"record_id": 7304618795}
 
 #resp = requests.get(url, headers={'Authorization': 'X-API-KEY ' + api_key}, cert=(cert_path, key_path))
 
 
-#create_record(123456, "Bill", "Jia", "09/05/2018", "123456")
-search_record("IdNumber", "7304618795")
-#get_record(3)
+#create_record("Shailen", "Patel", 6890486400, "123456")
+#search_record("FirstNames", "Bill")
+delete_record(9)
