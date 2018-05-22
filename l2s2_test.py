@@ -1,6 +1,7 @@
 import ssl
 import requests
 import json
+import os
 from requests.adapters import HTTPAdapter
 
 
@@ -10,7 +11,13 @@ key_path = "l2s2_info\\key.decrypted.key"
 f = open("l2s2_info\\apikey.txt", 'r')
 api_key = f.readline()
 base_url = "https://cued2018.xenplate.com/api"
+plate_template_id = "8114813b-6887-4ca2-a4b0-792ad633468d"
+plate_template_version = 5
 CFG_FILE = "config.cfg"
+current_user = 8
+
+POST = "POST"
+GET = "GET"
 
 def pretty_print_POST(req):
 	"""
@@ -28,52 +35,71 @@ def pretty_print_POST(req):
 		req.body,
 	))
 
-def print_response(resp):
-	print(resp.status_code)
+def formatDataForPlate(data, currentUser):
+	output = {
+		"record_id": currentUser,
+		"plate_template_id": plate_template_id,
+		"plate_template_version": plate_template_version
+	}
+	return output
+
+def printResponse(resp):
+	print("Status Code: " + str(resp.status_code))
 	print(resp.headers)
 	print(resp.text)
 
-def get_session():
+def getSession():
 	session = requests.Session()
 	session.headers.update({'Authorization': 'X-API-KEY ' + api_key})
 	session.cert = (cert_path, key_path)
 	return session
 
-s = get_session()
+s = getSession()
 
-def get_record(id):
-	url = base_url + "/record/read"
+def makeRequest(endpoint, method, headers={}, *args, **kwargs):
+	url = base_url + endpoint
+	req = requests.Request(method, url, *args, **kwargs)
+	prepped = s.prepare_request(req)
+	prepped.headers.update(headers)
+	print(prepped.headers)
+	resp = s.send(prepped)
+	return resp
+
+def getRecord(id):
 	params = {"record_id": id}
-	resp = s.get(url, params = params)
-	print_response(resp)
-	return 0
+	resp = makeRequest("/record/read", GET, params = params)
+	return resp
 
-
-def create_record(first_names, surname, date_of_birth, id_number):
-	url = base_url + "/record/create"
+def createRecord(first_names, surname, date_of_birth, id_number):
 	record = {"record": {"first_names": first_names, "surname": surname, "date_of_birth": date_of_birth, "id_number": id_number}}
-	resp = s.post(url, json=record)
-	print_response(resp)
-	return 0
+	resp = makeRequest("/record/create", POST, json=record)
+	return resp
 
-def update_record(ids, first_names, surname, date_of_birth, id_number):
-	url = base_url + "/record/update"
+def updateRecord(ids, first_names, surname, date_of_birth, id_number):
 	record = {"record": {"id": ids, "first_names": first_names, "surname": surname, "date_of_birth": date_of_birth, "id_number": id_number}}
-	resp = s.post(url, json=record)
-	print_response(resp)
+	resp = makeRequest("/record/update", POST, json=record)
+	return resp
 
-def delete_record(ids):
-	url = base_url + "/record/delete"
+def deleteRecord(ids):
 	record_id = {"record_id": ids}
-	resp = s.post(url, json=record_id)
-	print_response(resp)
+	resp = makeRequest("/record/delete", POST, json=record_id)
+	return resp
 
-def search_record(prop, value):
-	url = base_url + "/record/search"
+def searchRecord(prop, value):
 	payload = {"filters":[{"operator":1, "property":prop, "value":value}]}
-	req = requests.Request()
-	resp = s.post(url, json=payload)
-	print_response(resp)
+	resp = makeRequest("/record/search", POST, json=payload)
+	return resp
+
+def uploadFile(filePath):
+	fileName = os.path.basename(filePath)
+	with open(filePath, "rb") as file:
+		resp = makeRequest("/file/create", POST, headers={"X-Xenplate-File-Name": fileName}, data=file)
+	return resp
+
+def createPlateInstance(data, currentUser):
+	payload = formatDataForPlate(data, currentUser)
+	resp = makeRequest("/data/create", POST, json=payload)
+	return resp
 
 #params = {"record_id": 7304618795}
 
@@ -82,4 +108,7 @@ def search_record(prop, value):
 
 #create_record("Shailen", "Patel", 6890486400, "123456")
 #search_record("FirstNames", "Bill")
-delete_record(9)
+#delete_record(9)
+#printResponse(getRecord(8))
+#printResponse(searchRecord("FirstNames", "Bill"))
+printResponse(uploadFile("data/test.png"))
