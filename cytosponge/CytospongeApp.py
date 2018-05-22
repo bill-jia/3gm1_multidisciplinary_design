@@ -1,7 +1,8 @@
+import cytosponge
 import wx
-import serial
 import threading
 import time
+import numpy as np
 
 
 class CytospongeApp(wx.Frame):
@@ -17,13 +18,15 @@ class CytospongeApp(wx.Frame):
 
 		# Initialize superclass
 		super(CytospongeApp, self).__init__(*args, **kw)
-
-		# assign serial link
-		self.serialLink = self.initializeSerialLink(COMport)
-
+		
 		# Initialize event signalling
-		self.receivingData = threading.Event()
-		self.initializeDataListening()
+		self.eventService = cytosponge.EventService()
+
+		# Initialize serial communications service
+		self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.eventService)
+
+		# Initialize data analysis and manipulation
+		self.DataService = cytosponge.DataService()
 
 		#Create a panel
 		panel = wx.Panel(self)
@@ -39,68 +42,40 @@ class CytospongeApp(wx.Frame):
 		self.SetStatusText("Welcome to Cytosponge Training! Start a Test!")
 		time.sleep(2)
 
+
 	def runApp(self):
 		self.Show()
 		self.uiApp.MainLoop()
 
-	def initializeSerialLink(self, COMport):
-		serialLink = serial.Serial(COMport, 9600, timeout=1)
-		return serialLink
-
-	def readSerialData(self, event=None, timeout = None):
-		if event is not None:
-			event.wait()
-			while event.isSet():
-				try:
-					if self.serialLink.in_waiting > 0:
-						print("Attempt to Read")
-						readOut = self.serialLink.readline().decode('ascii')
-						print(readOut)
-						break
-					time.sleep(0.5)
-				except:
-					pass
-			self.SetStatusText("Training Finished")
-		elif timeout is None:
-			while True:
-				try:
-					if self.serialLink.in_waiting > 0:
-						print("Attempt to Read")
-						readOut = self.serialLink.readline().decode('ascii')
-						print(readOut)
-						break
-					time.sleep(0.5)
-				except:
-					pass
-		else:
-			timeStarted = time.time()
-			while True:
-				delta = time.time() - timeStarted
-				if delta < timeout:
-					if self.serialLink.in_waiting > 0:
-						print("Attempt to Read")
-						readOut = self.serialLink.readline().decode('ascii')
-						print(readOut)
-						break
-					time.sleep(0.25)
-				else:
-					break
-
-	def initializeDataListening(self):
-		self.dataListeningThread = threading.Thread(name="data-listening", target = self.readSerialData, args=(self.receivingData, None))
-		self.dataListeningThread.start()
+	def onTrainingFinished(self, event, x):
+		self.serialCommsService.dataListeningThread.join()
+		if event.isSet():
+			self.SetStatusText("Training finished")
+		self.DataService.parseData(self.serialCommsService.getIncomingData())
+		self.displayGraphs()
 
 	def OnClickStart(self, event):
-		if not self.dataListeningThread.is_alive():
-			self.initializeDataListening()
-		self.serialLink.write(CytospongeApp.startSignal.encode("utf-8"))
-		self.receivingData.set()
+		self.eventService.trainingFinished.clear()
+		self.serialCommsService.writeData(CytospongeApp.startSignal)
+		self.serialCommsService.listenForDataOnEvent(self.eventService.receivingData)
+		self.eventService.receivingData.set()
 		self.SetStatusText("Training in progress")
+		finishedTrainingThread = threading.Thread(name="training-finished", target = self.onTrainingFinished, args=(self.eventService.trainingFinished, 0))
+		finishedTrainingThread.start()
 
 	def OnClickStop(self, event):
-		self.serialLink.write(CytospongeApp.endSignal.encode("utf-8"))
-		self.receivingData.clear()
+		self.serialCommsService.writeData(CytospongeApp.endSignal)
+		self.eventService.receivingData.clear()
 		# Collect incomplete data
-		self.dataListeningThread = threading.Thread(name="data-listening", target = self.readSerialData, args=(None, 2))
-		self.dataListeningThread.start()
+		self.serialCommsService.collectEndData()
 		self.SetStatusText("Training stopped")
+
+	def displayGraphs(self):
+		# width, height, velocityRGB = self.DataService.plotVelocity()
+		# print(velocityRGB.tolist())
+		# velocityIm = wx.Image(width, height, velocityRGB)
+
+		velocityPath = self.DataService.plotVelocity()
+		velocityIm = wx.Image(velocityPath)
+		self.velocityGraph = wx.StaticBitmap(self, id=-1, bitmap=wx.Bitmap(velocityIm), pos=(40, 40), size=(100, 100))
+		self.velocityGraph.refresh()
