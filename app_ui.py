@@ -9,7 +9,7 @@ oesophagusLength = 30
 testSignal = "99"
 startSignal = "1"
 endSignal = "-1"
-COMport = 'COM5'
+COMport = 'COM3'
 
 def writeStartSignal():
 	# Write formatted data containing the test case and physical parameters
@@ -19,16 +19,44 @@ def initializeSerialLink(COMport):
 	serialLink = serial.Serial(COMport, 9600, timeout=1)
 	return serialLink
 
-def readSerialData(serialLink, event):
-	event.wait()
-	while event.isSet():
-		try:
-			print("Attempt to Read")
-			readOut = serialLink.readline().decode('ascii')
-			time.sleep(1)
-			print(readOut)
-		except:
-			pass
+def readSerialData(serialLink, event=None, timeout = None):
+	if event is not None:
+		event.wait()
+		while event.isSet():
+			try:
+				if serialLink.in_waiting > 0:
+					print("Attempt to Read")
+					readOut = serialLink.readline().decode('ascii')
+					print(readOut)
+					break
+				time.sleep(0.5)
+			except:
+				pass
+	elif timeout is None:
+		while True:
+			try:
+				if serialLink.in_waiting > 0:
+					print("Attempt to Read")
+					readOut = serialLink.readline().decode('ascii')
+					print(readOut)
+					break
+				time.sleep(0.5)
+			except:
+				pass
+	else:
+		timeStarted = time.time()
+		while True:
+			delta = time.time() - timeStarted
+			if delta < timeout:
+				if serialLink.in_waiting > 0:
+					print("Attempt to Read")
+					readOut = serialLink.readline().decode('ascii')
+					print(readOut)
+					break
+				time.sleep(0.25)
+			else:
+				break
+
 
 class AppFrame(wx.Frame):
 	def __init__(self, serialLink, *args, **kw):
@@ -51,21 +79,24 @@ class AppFrame(wx.Frame):
 		self.stopButton = wx.Button(self, label="Stop", pos=(50, 100))
 		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
 		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)
+		time.sleep(2)
 
 	def initializeDataListening(self):
-		self.dataListeningThread = threading.Thread(name="data-listening", target = readSerialData, args=(serialLink, self.receivingData))
+		self.dataListeningThread = threading.Thread(name="data-listening", target = readSerialData, args=(serialLink, self.receivingData, None))
 		self.dataListeningThread.start()
 
 	def OnClickStart(self, event):
+		if not self.dataListeningThread.is_alive():
+			self.initializeDataListening()
 		self.serialLink.write(startSignal.encode("utf-8"))
 		self.receivingData.set()
 
 	def OnClickStop(self, event):
 		self.serialLink.write(endSignal.encode("utf-8"))
 		self.receivingData.clear()
-		if not (self.dataListeningThread.is_alive()):
-			self.initializeDataListening()
-
+		# Collect incomplete data
+		self.dataListeningThread = threading.Thread(name="data-listening", target = readSerialData, args=(serialLink, None, 2))
+		self.dataListeningThread.start()
 
 
 if __name__ == '__main__':
