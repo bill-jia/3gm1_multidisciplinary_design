@@ -5,11 +5,11 @@ import time
 import queue
 
 class SerialCommunicationService:
-	def __init__(self, COMport, eventService):
+	def __init__(self, COMport, EventService):
 		self.serialLink = self.initializeSerialLink(COMport)
-		self.eventService = eventService
 		self.dataListeningThread = None
 		self.incomingData = queue.Queue()
+		self.EventService = EventService
 
 	def initializeSerialLink(self, COMport):
 		serialLink = serial.Serial(COMport, 9600, timeout=1)
@@ -36,7 +36,6 @@ class SerialCommunicationService:
 						print("Attempt to Read")
 						readOut = self.serialLink.readline().decode('ascii')
 						self.incomingData.put(readOut)
-						self.eventService.trainingFinished.set()
 						break
 					time.sleep(0.5)
 				except:
@@ -65,6 +64,7 @@ class SerialCommunicationService:
 					time.sleep(0.25)
 				else:
 					break
+		self.eventService.postTrainingFinished()
 
 	def getIncomingData(self):
 		return self.incomingData.get()
