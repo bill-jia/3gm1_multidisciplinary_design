@@ -33,11 +33,26 @@ class CytospongePanel(wx.Panel):
 		self.controlSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.controlSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 
+		# Set up plot area
+
 		# Test Image
-		velocityPath = "data/test0.png"
-		velocityIm = wx.Image(velocityPath).Rescale(600, 400)
-		self.velocityGraph = wx.StaticBitmap(self, id=-1, bitmap=wx.Bitmap(velocityIm), size=(600, 400))
-		self.graphDisplaySizer.Add(self.velocityGraph, 1, wx.EXPAND|wx.ALL, 10)
+		testPath = "data/test0.png"
+		testIm = wx.Image(testPath).Rescale(600, 400)
+		self.graphDisplay = wx.StaticBitmap(self, id=-1, size=(600, 400))
+
+		# Initialize plot bitmap placeholders
+		self.velocityGraph = wx.Bitmap()
+		self.tensionGraph = wx.Bitmap()
+		self.prevButton = wx.Button(self, label="Prev")
+		self.nextButton = wx.Button(self,label="Next")
+		self.Bind(wx.EVT_BUTTON, self.ToggleGraph, self.prevButton)
+		self.Bind(wx.EVT_BUTTON, self.ToggleGraph, self.nextButton)
+		
+		self.graphDisplaySizer.Add(self.prevButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.graphDisplaySizer.Add(self.graphDisplay, 1, wx.EXPAND|wx.ALL, 10)
+		self.graphDisplaySizer.Add(self.nextButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.graphDisplaySizer.Hide(0)
+		self.graphDisplaySizer.Hide(2)
 		 
 		# Bind software events
 		self.Bind(self.EventService.EVT_TRAINING_FINISHED, self.OnTrainingFinished)
@@ -46,7 +61,7 @@ class CytospongePanel(wx.Panel):
 		self.mainSizer.Add(self.graphDisplaySizer, 0, wx.CENTER|wx.ALL, 10)
 		self.SetSizer(self.mainSizer)
 
-		self.currImage = 0
+		self.currGraph = 0
 
 	def OnClickStart(self, event):
 		
@@ -71,6 +86,14 @@ class CytospongePanel(wx.Panel):
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 
+	def ToggleGraph(self, event):
+		self.currGraph = 1 - self.currGraph
+		if self.currGraph == 0:
+			self.graphDisplay.SetBitmap(self.velocityGraph)
+		else:
+			self.graphDisplay.SetBitmap(self.tensionGraph)
+		self.parent.fSizer.Layout()
+		self.parent.Fit()
 
 	def OnTrainingFinished(self, event):
 		
@@ -84,10 +107,12 @@ class CytospongePanel(wx.Panel):
 		self.EventService.postTrainingFinished()
 
 	def displayGraphs(self):
-		# width, height, velocityRGB = self.DataService.plotVelocity()
-		# print(velocityRGB.tolist())
-		# velocityIm = wx.Image(width, height, velocityRGB)
-
+		width, height, velocityRGB = self.DataService.plotVelocity()
+		velocityIm = wx.Image(width, height, velocityRGB).Rescale(600,400)
+		width, height, tensionRGB = self.DataService.plotTension()
+		tensionIm = wx.Image(width, height, tensionRGB).Rescale(600,400)
+		self.velocityGraph = wx.Bitmap(velocityIm)
+		self.tensionGraph = wx.Bitmap(tensionIm)
 		#velocityPath = self.DataService.plotVelocity()
 		#self.DataService.plotTension()
 		#velocityPath = "data/test2.png"
@@ -99,15 +124,14 @@ class CytospongePanel(wx.Panel):
 		# self.graphDisplaySizer.Remove(0)
 		# self.parent.fSizer.Layout()
 		# self.parent.Fit()
-		
-		print("Displaying Graphs")
-		self.graphDisplaySizer.Hide(0)
-		self.graphDisplaySizer.Remove(0)
-		self.currImage = 1-self.currImage
-		velocityPath = "data/test" + str(self.currImage) + ".png"
-		velocityIm = wx.Image(velocityPath).Rescale(600, 400)
-		self.velocityGraph = wx.StaticBitmap(self, id=-1, bitmap=wx.Bitmap(velocityIm), size=(600, 400))
-		self.graphDisplaySizer.Add(self.velocityGraph, 1, wx.EXPAND|wx.ALL, 10)
+
+		self.graphDisplaySizer.Show(0)
+		self.graphDisplaySizer.Show(2)
+
+		# velocityPath = "data/test" + str(self.currImage) + ".png"
+		# velocityIm = wx.Image(velocityPath).Rescale(600, 400)
+		self.graphDisplay.SetBitmap(self.velocityGraph)
+		self.currGraph = 0
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 

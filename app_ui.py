@@ -6,6 +6,6 @@ oesophagusLength = 30
 COMport = 'COM3'
 
 if __name__ == '__main__':
-	app = cytosponge.CytospongeApp(COMport, None, title="Cytosponge Training", size=(800,600))
+	app = cytosponge.CytospongeApp(COMport, None, title="Cytosponge Training", size=(1000,600))
 	
 	
