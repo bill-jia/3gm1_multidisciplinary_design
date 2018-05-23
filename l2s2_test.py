@@ -92,14 +92,68 @@ def searchRecord(prop, value):
 
 def uploadFile(filePath):
 	fileName = os.path.basename(filePath)
+	dummyResp = makeRequest("/file/connect", "GET")
 	with open(filePath, "rb") as file:
 		resp = makeRequest("/file/create", POST, headers={"X-Xenplate-File-Name": fileName}, data=file)
 	return resp
 
 def createPlateInstance(data, currentUser):
 	payload = formatDataForPlate(data, currentUser)
+	print(payload)
 	resp = makeRequest("/data/create", POST, json=payload)
 	return resp
+
+def formatDataForPlate(data, currentUser):
+	outputData = {"data": {
+		"record_id": currentUser,
+		"plate_template_id": plate_template_id,
+		"plate_template_version": plate_template_version,
+		"control_values": [
+			{
+				"id": 8,
+				"value": data["test_id"]
+			},
+			{
+				"id": 9,
+				"value": data["test_case"]
+			},
+			{
+				"id": 10,
+				"value": data["oesophagus_length"]
+			},
+			{
+				"id": 11,
+				"value": data["score"]
+			},
+			{
+				"id": 13,
+				"value": data["feedback"]
+			},
+			{
+				"id": 15,
+				"value":"",
+				"attachments": [
+					{
+						"description": "",
+						"key": data["velocity_graph"],
+						"original_file_name": data["velocity_graph_name"]
+					}
+				]
+			},
+			{
+				"id": 17,
+				"value":"",
+				"attachments": [
+					{
+						"description": "",
+						"key": data["tension_graph"],
+						"original_file_name": data["tension_graph_name"]
+					}
+				]
+			}
+		]
+	} }
+	return outputData
 
 #params = {"record_id": 7304618795}
 
@@ -111,4 +165,19 @@ def createPlateInstance(data, currentUser):
 #delete_record(9)
 #printResponse(getRecord(8))
 #printResponse(searchRecord("FirstNames", "Bill"))
-printResponse(uploadFile("data/test.png"))
+#printResponse(uploadFile("data/test0.png"))
+
+#0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png
+
+test_data = {
+	"test_id": 2,
+	"test_case": "Seize",
+	"oesophagus_length": 20,
+	"score": 70,
+	"feedback": "Okay",
+	"velocity_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
+	"velocity_graph_name": "test0.png",
+	"tension_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
+	"tension_graph_name": "test0.png"
+}
+printResponse(createPlateInstance(test_data, current_user))
