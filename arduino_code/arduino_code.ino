@@ -1,4 +1,4 @@
-#include <QList.h>
+/*#include <QList.h>
 
 int encoderIn1 = 3;
 int encoderIn2 = 2;
@@ -158,4 +158,6 @@ void loop() {
   //Serial.println(displacement[kinematicsSampleNumber-1]);
   delay(100);
 }
+*/
+
 
