@@ -34,8 +34,8 @@ class DataService:
 		ax1.plot(x, y)
 		ax1.set_xlabel(xlabel)
 		ax1.set_ylabel(ylabel)
-		fig1.savefig("data/test.png")
-		return "data/test.png"
+		fig1.savefig("data/test2.png")
+		return "data/test2.png"
 
 	def plotVelocity(self):
 		return self.plotToPNG(self.time, self.velocity, "Time", "Velocity")
