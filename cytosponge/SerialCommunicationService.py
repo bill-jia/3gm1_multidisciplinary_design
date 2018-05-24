@@ -64,7 +64,7 @@ class SerialCommunicationService:
 					time.sleep(0.25)
 				else:
 					break
-		self.eventService.postTrainingFinished()
+		self.EventService.postTrainingFinished()
 
 	def getIncomingData(self):
 		return self.incomingData.get()

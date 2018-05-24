@@ -6,7 +6,7 @@ import numpy as np
 
 
 class CytospongePanel(wx.Panel):
-	def __init__(self, parent):
+	def __init__(self, parent, COMport):
 		wx.Panel.__init__(self, parent)
 		self.parent = parent
 
@@ -14,7 +14,7 @@ class CytospongePanel(wx.Panel):
 		self.EventService = cytosponge.EventService(self)
 
 		# Initialize serial communications service
-		#self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
+		self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
 
 		# Initialize data analysis and manipulation
 		self.DataService = cytosponge.DataService()
@@ -66,20 +66,21 @@ class CytospongePanel(wx.Panel):
 	def OnClickStart(self, event):
 		
 		# ACTUAL CODE
-		# self.EventService.trainingFinished.clear()
-		# self.serialCommsService.writeData(CytospongeApp.startSignal)
-		# self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
-		# self.EventService.receivingData.set()
+		self.serialCommsService.writeData(CytospongeApp.startSignal)
+		self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
+		self.EventService.receivingData.set()
 		self.parent.SetStatusText("Training in progress")
-		t = threading.Timer(2.0, self.setTrainingFinished)
-		t.start()
+
+		# No arduino test code
+		# t = threading.Timer(2.0, self.setTrainingFinished)
+		# t.start()
 
 
 	def OnClickStop(self, event):
-		# self.serialCommsService.writeData(CytospongeApp.endSignal)
-		# self.EventService.receivingData.clear()
-		# # Collect incomplete data
-		# self.serialCommsService.collectEndData()
+		self.serialCommsService.writeData(CytospongeApp.endSignal)
+		self.EventService.receivingData.clear()
+		# Collect incomplete data
+		self.serialCommsService.collectEndData()
 		self.parent.SetStatusText("Training stopped")
 		self.new_button = wx.Button(self, label="test", name="test")
 		self.graphDisplaySizer.Add(self.new_button, 0, wx.ALL, 5)
@@ -100,7 +101,7 @@ class CytospongePanel(wx.Panel):
 		#ACTUAL CODE
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
-		#self.DataService.parseData(self.serialCommsService.getIncomingData())
+		self.DataService.parseData(self.serialCommsService.getIncomingData())
 		self.DataService.analyzeData()
 		self.loadGraphImages()
 		self.displayGraphs()
@@ -139,7 +140,7 @@ class CytospongeApp(wx.Frame):
 		super(CytospongeApp, self).__init__(*args, **kw)
 
 		#Create a panel
-		self.panel = CytospongePanel(self)
+		self.panel = CytospongePanel(self, COMport)
 
 		#fit Sizer
 		self.fSizer = wx.BoxSizer(wx.VERTICAL)

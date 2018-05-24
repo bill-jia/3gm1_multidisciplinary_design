@@ -14,7 +14,7 @@ class DataService:
 		self.velocityGraph = io.BytesIO()
 		self.tensionGraph = io.BytesIO()
 
-		self.tension = [5, 3, 8, 2, 1]
+		self.tension = [5, 5, 5, 5, 5]
 		self.acceleration = []
 		self.oesophagusLength = 30
 		self.sphincterStrength = 1
@@ -23,7 +23,6 @@ class DataService:
 		self.feedback = ""
 
 	def parseData(self, data):
-		print(data)
 		arrays = data.split(" , ")
 		raw_time = arrays[0].split(" ")
 		raw_displacement = arrays[1].split(" ")
@@ -32,9 +31,9 @@ class DataService:
 		self.time_increment = float(raw_time[1])
 		self.time = [i*self.time_increment for i in range(0, (len(raw_displacement)-2))]
 		self.displacement = [float(i) for i in raw_displacement[1:-1]]
-		#self.velocity = DataService.differentiate(self.displacement, self.time_increment)
+		self.velocity = DataService.differentiate(self.displacement, self.time_increment)
 		self.acceleration = DataService.differentiate(self.velocity, self.time_increment)
-		#self.tension = [float(i) for i in raw_force[1:-1]]
+		self.tension = [float(i) for i in raw_force[1:-1]]
 
 	def analyzeData(self):
 		### TBD
