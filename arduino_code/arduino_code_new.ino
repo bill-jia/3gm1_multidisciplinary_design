@@ -28,25 +28,26 @@ float e = 2.71828;
 float pi = 3.14159;
 float pot_calibrate = 1.0;  //calibration constant to convert voltage across pot into angular displacement
 int tension_read, tension_avg, pot_read, pot_avg;  //variables required to perform smoothing
-int present = 1;
-int previous = 0;
+int data_points = 200;
+int present = data_points - 1;
+int previous = data_points - 2;
 int timeIntervalMillis;
 
 //Parameters
 
 double k1 = 100;           //for the stomach sphincter
-float mean1 = 100;      //set the gaussian centres without calibration for now #########
-float variance1 = 1000;
+float mean1 = 400;      //set the gaussian centres without calibration for now #########
+float variance1 = 100;
 double k2 = 200;           //for the mouth sphincter
 float mean2 = 900;
-float variance2 = 1000;
+float variance2 = 100;
 
 
 // VARIABLES
 float k_p, k_i, k_d;
-volatile QList<int> potSampled, pot, tensionSampled, tension, timer; //so that we can take a time average of the readings in order to remove noise
-volatile QList<float> displacement, velocity, acceleration;
-int maxDisplacement, timeoutSec;
+QList<int> potSampled, tensionSampled, tension, timer; //so that we can take a time average of the readings in order to remove noise
+QList<float> displacement, force;
+int maxDisplacement, timeoutSec, pot;
 
 
 // SENSORS
@@ -71,9 +72,9 @@ int getTensometer() {
 }
 
 void readSensors() {
-  pot.pop_front();
-  pot.push_back(getPotentiometer());      //the index [samples - 1] gives the most recent addition to the stack 
-  tension.pop_front();
+
+  pot = getPotentiometer();     
+  tension.pop_front();                //the index [samples - 1] gives the most recent addition to the stack
   tension.push_back(getTensometer());
 }
 
@@ -117,33 +118,9 @@ void retract() {
 
 // CALCULATE PHYSICS
 
-float calculateDisplacement(){
-  //returns the current displacement in cm
-  return pot[present]*pot_calibrate;  
-}
-
-float calculateVelocity(int timeIntervalMillis) {
-  // Return velocity in cm/s
-  return (displacement[present] - displacement[previous])/(timeIntervalMillis*0.001);
-}
-
-float calculateAcceleration(int timeIntervalMillis) {
-  // Return acceleration in cm/s^2 
-  return (velocity[present] - velocity[previous])/(timeIntervalMillis*0.001);
-}
-
-void updateKinematics(int timeIntervalMillis) {
-  displacement.push_back(calculateDisplacement());
+void calculateDisplacement() {
+  displacement.push_back(pot*pot_calibrate);
   displacement.pop_front();
-  //Serial.println(displacement[previous]);
-  velocity.push_back(calculateVelocity(timeIntervalMillis));    //if we wanted to store more than just the last two kinematic values
-  velocity.pop_front();                                         //then we can set present = kinematicsSampleNumber - 1; previous = kinematicsSampleNumber - 2;
-  //Serial.println(velocity[present]);
-  acceleration.push_back(calculateAcceleration(timeIntervalMillis)); 
-  acceleration.pop_front();    
-  //Serial.println(acceleration[present]);
-  //Serial.println();
-  //Serial.println();
 }
 
 float gaussian(float x, float mean, float variance) {
@@ -172,6 +149,7 @@ void setup() {
   pinMode(B1B, OUTPUT);
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
+  pot = 0;
   for (int i = 0; i < samples; i++){   //creating the stacks of size samples
     //pot.push_back(0);             //note that the pot and tension do not need to be the same length as the smoothing samples 
     //tension.push_back(0);         //because we are just using their contents to calculate vel and acc.
@@ -179,14 +157,12 @@ void setup() {
     tensionSampled.push_back(0);
   }
   for (int i = 0; i < 2; i++){
-    pot.push_back(0);
     tension.push_back(0); 
     timer.push_back(0); 
   }
-  for (int i = 0; i < 2; i++){   //same for kinematics 
+  for (int i = 0; i < data_points; i++){   //same for kinematics 
     displacement.push_back(0);
-    velocity.push_back(0);
-    acceleration.push_back(0);
+    force.push_back(0);
   }
   //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);//we dont need this for a pot right?
   Serial.println("Program start");
@@ -197,9 +173,9 @@ void loop() {
   //Stuff in main loop not permanent for now
   timerStart();
   readSensors();
-  delay(2);
+  delay(50);
   timeIntervalMillis = timerStop();
-  updateKinematics(timeIntervalMillis);
+  calculateDisplacement();
   //now for the current disp, vel and acc we can determine the force output but for now we will base it just on disp
   Serial.print("Displacement: ");
   Serial.print(displacement[present]);
@@ -207,7 +183,7 @@ void loop() {
   Serial.print("Force: ");
   Serial.print(" ");
   Serial.println(modelForce(displacement[present]));
-  controller(modelForce(displacement[present]));
+  //controller(modelForce(displacement[present]));
 
 }
 
