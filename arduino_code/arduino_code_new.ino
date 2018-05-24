@@ -28,7 +28,7 @@ float e = 2.71828;
 float pi = 3.14159;
 float pot_calibrate = 1.0;  //calibration constant to convert voltage across pot into angular displacement
 int tension_read, tension_avg, pot_read, pot_avg;  //variables required to perform smoothing
-int data_points = 200;
+int data_points = 2;
 int present = data_points - 1;
 int previous = data_points - 2;
 int timeIntervalMillis;
@@ -44,10 +44,11 @@ float variance2 = 100;
 
 
 // VARIABLES
-float k_p, k_i, k_d;
+float k_p, k_i, k_d, pot;
 QList<int> potSampled, tensionSampled, tension, timer; //so that we can take a time average of the readings in order to remove noise
-QList<float> displacement, force;
-int maxDisplacement, timeoutSec, pot;
+QList<float> displacement;
+QList<byte> force;
+int maxDisplacement, timeoutSec;
 
 
 // SENSORS
@@ -72,7 +73,6 @@ int getTensometer() {
 }
 
 void readSensors() {
-
   pot = getPotentiometer();     
   tension.pop_front();                //the index [samples - 1] gives the most recent addition to the stack
   tension.push_back(getTensometer());
@@ -131,9 +131,10 @@ float modelForce(float d) {
   return k1*gaussian(d, mean1, variance1) + k2*gaussian(d, mean2, variance2) + 50;
 }
 
-float controller(float modelForce){   //open loop for now
-  byte force = modelForce; 
-  brake(force);
+void controller(float d){   //open loop for now
+  force.pop_front();
+  force.push_back(modelForce(d));
+  brake(force[present]);
 }
 
 void resetVariables() {
@@ -151,8 +152,6 @@ void setup() {
   pinMode(A1, INPUT);
   pot = 0;
   for (int i = 0; i < samples; i++){   //creating the stacks of size samples
-    //pot.push_back(0);             //note that the pot and tension do not need to be the same length as the smoothing samples 
-    //tension.push_back(0);         //because we are just using their contents to calculate vel and acc.
     potSampled.push_back(0);
     tensionSampled.push_back(0);
   }
@@ -173,18 +172,18 @@ void loop() {
   //Stuff in main loop not permanent for now
   timerStart();
   readSensors();
-  delay(50);
+  delay(20);
   timeIntervalMillis = timerStop();
   calculateDisplacement();
-  //now for the current disp, vel and acc we can determine the force output but for now we will base it just on disp
-  Serial.print("Displacement: ");
+  /*Serial.print("Displacement: ");
   Serial.print(displacement[present]);
   Serial.print(" ");
   Serial.print("Force: ");
   Serial.print(" ");
-  Serial.println(modelForce(displacement[present]));
-  //controller(modelForce(displacement[present]));
-
+  Serial.println(modelForce(displacement[present]));*/
+  Serial.println(displacement[present]);
+  controller(displacement[present]);
+  
 }
 
 
