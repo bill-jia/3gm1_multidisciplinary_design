@@ -1,6 +1,7 @@
 import cytosponge
 import requests
 import io
+import json
 
 class HTTPService:
 	POST = "POST"
@@ -15,7 +16,7 @@ class HTTPService:
 		self.api_key = f.readline()
 		self.base_url = "https://cued2018.xenplate.com/api"
 		self.plate_template_id = "8114813b-6887-4ca2-a4b0-792ad633468d"
-		self.plate_template_version = 5
+		self.plate_template_version = 9
 		self.current_user = 8
 		self.session = self.getSession(self.api_key, self.cert_path, self.key_path)
 
@@ -126,6 +127,10 @@ class HTTPService:
 							"original_file_name": data["tension_graph_name"]
 						}
 					]
+				},
+				{
+					"id": 24,
+					"value": json.dumps(data["raw_data"])
 				}
 			]
 		} }
