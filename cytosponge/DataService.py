@@ -32,7 +32,10 @@ class DataService:
 		ax1.plot(x, y)
 		ax1.set_xlabel(xlabel)
 		ax1.set_ylabel(ylabel)
-		return self.fig2data(fig1)
+		buf = io.BytesIO()
+		fig1.savefig(buf, format='png')
+		buf.seek(0)
+		return buf
 
 	def plotVelocity(self):
 		return self.plotToPNG(self.time, self.velocity, "Time", "Velocity")
@@ -46,11 +49,3 @@ class DataService:
 		for i in range(1,len(data)):
 			dData.append((data[i]-data[i-1])/time_increment)
 		return dData
- 
-	def fig2data(self,fig):
-	    # draw the renderer
-	    fig.canvas.draw()
-	    # Get the RGBA buffer from the figure
-	    w,h = fig.canvas.get_width_height()
-	    buf = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8)
-	    return (w, h, buf.reshape(h,w,3))

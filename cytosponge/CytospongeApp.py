@@ -101,35 +101,23 @@ class CytospongePanel(wx.Panel):
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
 		#self.DataService.parseData(self.serialCommsService.getIncomingData())
+		self.loadGraphImages()
 		self.displayGraphs()
 
 	def setTrainingFinished(self):
 		self.EventService.postTrainingFinished()
 
+	def loadGraphImages(self):
+		self.velocityIm = wx.Image(self.DataService.plotVelocity()).Rescale(600,400)
+		self.tensionIm = wx.Image(self.DataService.plotTension()).Rescale(600,400)
+
 	def displayGraphs(self):
-		width, height, velocityRGB = self.DataService.plotVelocity()
-		velocityIm = wx.Image(width, height, velocityRGB).Rescale(600,400)
-		width, height, tensionRGB = self.DataService.plotTension()
-		tensionIm = wx.Image(width, height, tensionRGB).Rescale(600,400)
-		self.velocityGraph = wx.Bitmap(velocityIm)
-		self.tensionGraph = wx.Bitmap(tensionIm)
-		#velocityPath = self.DataService.plotVelocity()
-		#self.DataService.plotTension()
-		#velocityPath = "data/test2.png"
-		# velocityIm = wx.Image(velocityPath)
-		# self.velocityGraph = wx.StaticBitmap(self, id=-1, bitmap=wx.Bitmap(velocityIm), pos=(40, 40), size=(200, 200))
-		# self.graphDisplaySizer.Add(self.velocityGraph, 1, wx.EXPAND|wx.ALL, 10)
-		
-		# self.graphDisplaySizer.Hide(0)
-		# self.graphDisplaySizer.Remove(0)
-		# self.parent.fSizer.Layout()
-		# self.parent.Fit()
+		self.velocityGraph = wx.Bitmap(self.velocityIm)
+		self.tensionGraph = wx.Bitmap(self.tensionIm)
 
 		self.graphDisplaySizer.Show(0)
 		self.graphDisplaySizer.Show(2)
 
-		# velocityPath = "data/test" + str(self.currImage) + ".png"
-		# velocityIm = wx.Image(velocityPath).Rescale(600, 400)
 		self.graphDisplay.SetBitmap(self.velocityGraph)
 		self.currGraph = 0
 		self.parent.fSizer.Layout()
