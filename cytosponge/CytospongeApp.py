@@ -101,8 +101,10 @@ class CytospongePanel(wx.Panel):
 		#ACTUAL CODE
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
-		self.DataService.parseData(self.serialCommsService.getIncomingData())
-		self.DataService.analyzeData()
+		self.DataService.analyzeData(self.serialCommsService.getIncomingData())
+		uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
+		uploadThread.start()
+		uploadThread.join()
 		self.loadGraphImages()
 		self.displayGraphs()
 

@@ -2,17 +2,29 @@ import cytosponge
 import matplotlib.pyplot as plt
 import io
 import numpy as np
+import copy
 
 class DataService:
 	def __init__(self):
+
+
+		#Initialize connection to L2S2
+		self.httpService = cytosponge.HTTPService()
+
 		self.time_increment = 1
 		self.time = [0, 1, 2, 3, 4]
 		self.displacement = []
 		self.velocity = [0, 1, 2, 3, 4]
+		self.demandForce = []
 		self.lowerBoundV = []
 		self.upperBoundV = []
+		self.lowerBoundT = []
+		self.upperBoundT = []
 		self.velocityGraph = io.BytesIO()
 		self.tensionGraph = io.BytesIO()
+		self.velocityGraphUpload = io.BytesIO()
+		self.tensionGraphUpload = io.BytesIO()
+		self.currentUser = 8
 
 		self.tension = [5, 5, 5, 5, 5]
 		self.acceleration = []
@@ -35,9 +47,13 @@ class DataService:
 		self.acceleration = DataService.differentiate(self.velocity, self.time_increment)
 		self.tension = [float(i) for i in raw_force[1:-1]]
 
-	def analyzeData(self):
+	def analyzeData(self, data={}):
+		#CODE WHEN SERIAL
+		self.parseData(data)
+		
 		### TBD
 		# Calculate lower and upper bounds for a particular model
+		self.demandForce = self.calculateModelForce()
 		idealForce = self.calculateIdealForce()
 		self.lowerBoundV, self.upperBoundV = self.calculateVelocityBounds(idealForce)
 		self.lowerBoundT, self.upperBoundT = self.calculateForceBounds(idealForce)
@@ -57,8 +73,39 @@ class DataService:
 
 	def wrapDataJSON(self):
 		# TBD: Wrap data in JSON to send to L2S2
-		data = {}
+		data = {
+			"test_id": 1,
+			"test_case": self.testCase,
+			"oesophagus_length": self.oesophagusLength,
+			"score": self.score,
+			"feedback": self.feedback,
+			"raw_data": {
+				"time": self.arrayToString(self.time),
+				"tension": self.arrayToString(self.tension),
+				"demand_force": self.arrayToString(self.demandForce),
+				"displacement": self.arrayToString(self.displacement)
+			}
+		}
 		return data
+
+	def uploadData(self):
+		data = self.wrapDataJSON()
+		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
+		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
+		self.httpService.createPlateInstance(data, self.currentUser)
+		self.velocityGraphUpload.seek(0)
+		self.tensionGraphUpload.seek(0)
+
+	def arrayToString(self, array):
+		outputString = ""
+		for i in array:
+			outputString = outputString + str(i) + " "
+		return outputString
+
+	def calculateModelForce(self):
+		modelForce = []
+		#TBD
+		return modelForce
 
 	def calculateIdealForce(self):
 		idealForce = []
@@ -115,9 +162,11 @@ class DataService:
 
 	def plotVelocity(self):
 		self.velocityGraph = self.plotToPNG(self.time, self.velocity, self.lowerBoundV, self.upperBoundV, "Time", "Velocity")
+		self.velocityGraphUpload = copy.deepcopy(self.velocityGraph)
 
 	def plotTension(self):
 		self.tensionGraph = self.plotToPNG(self.time, self.tension, self.lowerBoundT, self.upperBoundT, "Time", "Tension")
+		self.tensionGraphUpload = copy.deepcopy(self.tensionGraph)
 
 	@staticmethod
 	def differentiate(data, time_increment):

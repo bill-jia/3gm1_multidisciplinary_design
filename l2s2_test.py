@@ -63,6 +63,7 @@ def makeRequest(endpoint, method, headers={}, *args, **kwargs):
 	prepped.headers.update(headers)
 	print(prepped.headers)
 	resp = s.send(prepped)
+	printResponse(resp)
 	return resp
 
 def getRecord(id):
@@ -168,16 +169,16 @@ def formatDataForPlate(data, currentUser):
 #printResponse(uploadFile("data/test0.png"))
 
 #0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png
-
-test_data = {
-	"test_id": 2,
-	"test_case": "Seize",
-	"oesophagus_length": 20,
-	"score": 70,
-	"feedback": "Okay",
-	"velocity_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
-	"velocity_graph_name": "test0.png",
-	"tension_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
-	"tension_graph_name": "test0.png"
-}
-printResponse(createPlateInstance(test_data, current_user))
+uploadFile("data/test0.png")
+# test_data = {
+# 	"test_id": 2,
+# 	"test_case": "Seize",
+# 	"oesophagus_length": 20,
+# 	"score": 70,
+# 	"feedback": "Okay",
+# 	"velocity_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
+# 	"velocity_graph_name": "test0.png",
+# 	"tension_graph": "0AB3531E6E187E0EC49B7C1477BB79264ADF9186.png",
+# 	"tension_graph_name": "test0.png"
+# }
+# printResponse(createPlateInstance(test_data, current_user))
