@@ -5,6 +5,9 @@ import numpy as np
 import copy
 
 class DataService:
+	AcceptableRange = 0.1
+	ForceScoreConstant = 1
+
 	def __init__(self):
 
 
@@ -16,6 +19,7 @@ class DataService:
 		self.displacement = []
 		self.velocity = [0, 1, 2, 3, 4]
 		self.demandForce = []
+		self.idealForce = []
 		self.lowerBoundV = []
 		self.upperBoundV = []
 		self.lowerBoundT = []
@@ -54,20 +58,23 @@ class DataService:
 		
 		### TBD
 		# Calculate lower and upper bounds for a particular model
-		self.demandForce = self.calculateModelForce()
-		idealForce = self.calculateIdealForce()
-		self.lowerBoundV, self.upperBoundV = self.calculateVelocityBounds(idealForce)
-		self.lowerBoundT, self.upperBoundT = self.calculateForceBounds(idealForce)
+		# self.demandForce = self.calculateModelForce()
+		# self.idealForce = self.calculateIdealForce()
+		# self.lowerBoundV, self.upperBoundV = self.calculateVelocityBounds(self.idealForce)
+		# self.lowerBoundT, self.upperBoundT = self.calculateForceBounds(self.idealForce)
 
 		# Plot data
 		self.plotVelocity()
 		self.plotTension()
 
+		forceFeedback = ""
+		velocityFeedback = ""
+		timeFeedback = ""
 		# Develop a scoring system
-		forceScore, forceFeedback = self.scoreFromForce()
-		velocityScore, velocityFeedback = self.scoreFromVelocity()
-		timeScore, timeFeedback = self.scoreFromTime()
-		self.score = forceScore + velocityScore + timeScore
+		# forceScore, forceFeedback = self.scoreFromForce()
+		# velocityScore, velocityFeedback = self.scoreFromVelocity()
+		# timeScore, timeFeedback = self.scoreFromTime()
+		# self.score = forceScore + velocityScore + timeScore
 		
 		# Give text versions of feedback
 		self.feedback = forceFeedback + "; " + velocityFeedback + "; " + timeFeedback
@@ -121,6 +128,7 @@ class DataService:
 	def calculateVelocityBounds(self, idealForce):
 		lowerBoundV = []
 		upperBoundV = []
+
 		# TBD: How to actually do a bound for velocity?
 
 		return (lowerBoundV, upperBoundV)
@@ -130,12 +138,20 @@ class DataService:
 		upperBoundT = []
 		#TBD: Scale by ideal force (+- 10%?)
 
+		for force in idealForce:
+			Df = DataService.AcceptableRange*idealForce
+			lowerBoundT.append(idealForce - Df)
+			upperBoundT.append(idealForce + Df)
+
 		return (lowerBoundT, upperBoundT)
 
 	def scoreFromForce(self):
 		#TBD
 		feedback = ""
 		score = 0
+		for idx, force in enumerate(self.tension):
+			complexValue = 1 + 2j*(force - self.idealForce)/(self.upperBoundT[idx] - self.lowerBoundT[idx])
+			score += DataService.ForceScoreConstant*(-20*math.log10(abs(complexValue)) + 3)
 		return (score, feedback)
 
 	def scoreFromVelocity(self):
