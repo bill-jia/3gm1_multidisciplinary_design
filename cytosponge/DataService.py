@@ -2,6 +2,7 @@ import cytosponge
 import matplotlib.pyplot as plt
 import io
 import numpy as np
+import copy
 
 class DataService:
 	def __init__(self):
@@ -21,6 +22,8 @@ class DataService:
 		self.upperBoundT = []
 		self.velocityGraph = io.BytesIO()
 		self.tensionGraph = io.BytesIO()
+		self.velocityGraphUpload = io.BytesIO()
+		self.tensionGraphUpload = io.BytesIO()
 		self.currentUser = 8
 
 		self.tension = [5, 3, 8, 2, 1]
@@ -88,13 +91,11 @@ class DataService:
 
 	def uploadData(self):
 		data = self.wrapDataJSON()
-		self.velocityGraph.seek(0)
-		self.tensionGraph.seek(0)
-		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraph, "velocity_graph.png")
-		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraph, "tension_graph.png")
+		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
+		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
 		self.httpService.createPlateInstance(data, self.currentUser)
-		self.velocityGraph.seek(0)
-		self.tensionGraph.seek(0)
+		self.velocityGraphUpload.seek(0)
+		self.tensionGraphUpload.seek(0)
 
 	def arrayToString(self, array):
 		outputString = ""
@@ -162,9 +163,11 @@ class DataService:
 
 	def plotVelocity(self):
 		self.velocityGraph = self.plotToPNG(self.time, self.velocity, self.lowerBoundV, self.upperBoundV, "Time", "Velocity")
+		self.velocityGraphUpload = copy.deepcopy(self.velocityGraph)
 
 	def plotTension(self):
 		self.tensionGraph = self.plotToPNG(self.time, self.tension, self.lowerBoundT, self.upperBoundT, "Time", "Tension")
+		self.tensionGraphUpload = copy.deepcopy(self.tensionGraph)
 
 	@staticmethod
 	def differentiate(data, time_increment):
