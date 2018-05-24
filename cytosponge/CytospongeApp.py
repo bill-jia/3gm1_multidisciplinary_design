@@ -101,6 +101,7 @@ class CytospongePanel(wx.Panel):
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
 		#self.DataService.parseData(self.serialCommsService.getIncomingData())
+		self.DataService.analyzeData()
 		self.loadGraphImages()
 		self.displayGraphs()
 
@@ -108,8 +109,8 @@ class CytospongePanel(wx.Panel):
 		self.EventService.postTrainingFinished()
 
 	def loadGraphImages(self):
-		self.velocityIm = wx.Image(self.DataService.plotVelocity()).Rescale(600,400)
-		self.tensionIm = wx.Image(self.DataService.plotTension()).Rescale(600,400)
+		self.velocityIm = wx.Image(self.DataService.velocityGraph).Rescale(600,400)
+		self.tensionIm = wx.Image(self.DataService.tensionGraph).Rescale(600,400)
 
 	def displayGraphs(self):
 		self.velocityGraph = wx.Bitmap(self.velocityIm)
