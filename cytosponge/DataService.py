@@ -3,10 +3,15 @@ import matplotlib.pyplot as plt
 import io
 import numpy as np
 import copy
+from scipy.special import gamma
 
 class DataService:
 	AcceptableRange = 0.1
 	ForceScoreConstant = 1
+	TimeScoreConstant = 1
+	GammaDistAlpha = 1.5
+	GammaDistTheta = 1.75
+	GammaDistDenom = DataService.GammaDistTheta**DataService.GammaDistAlpha*gamma(DataService.GammaDistAlpha)
 
 	def __init__(self):
 
@@ -163,7 +168,8 @@ class DataService:
 	def scoreFromTime(self):
 		#TBD
 		feedback = ""
-		score = 0
+		pd = self.time[-1]**(DataService.GammaDistAlpha-1)*np.exp(-self.time[-1]/DataService.GammaDistTheta)/DataService.GammaDistDenom
+		score = DataService.TimeScoreConstant*pd
 		return (score, feedback)
 
 	def plotToPNG(self, x, y, lowerBound, upperBound, xlabel, ylabel):
