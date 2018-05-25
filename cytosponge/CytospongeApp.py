@@ -32,13 +32,16 @@ class CytospongePanel(wx.Panel):
 		self.stopButton = wx.Button(self, label="Stop")
 		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
 		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)
-		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
-		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 
 		# Add controls
 		self.manualParameterControl = wx.CheckBox(self, label= "Set Parameters")
 		self.oesophagusLengthControl = wx.Slider(self, value=25, minValue=10, maxValue=50, style = wx.SL_LABELS)
 		self.testCaseSelection = wx.ComboBox(self, value="Normal", choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
+		self.Bind(wx.EVT_CHECKBOX, self.OnCheckParams, self.manualParameterControl)
+		# self.Bind(wx.EVT_SCROLL_THUMBRELEASE, self.OnOLSlide, self.oesophagusLengthControl)
+		# self.Bind(wx.EVT_COMBOBOX, self.OnSelectTest, self.testCaseSelection)
+		self.oesophagusLengthControl.Disable()
+		self.testCaseSelection.Disable()
 
 
 		# Set up plot area
@@ -65,6 +68,10 @@ class CytospongePanel(wx.Panel):
 		# Bind software events
 		self.Bind(self.EventService.EVT_TRAINING_FINISHED, self.OnTrainingFinished)
 
+
+		# Map layout
+		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
 		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL, 10)
 		self.controlSizer.Add(self.oesophagusLengthControl, 0, wx.CENTER|wx.ALL, 10)
@@ -98,15 +105,6 @@ class CytospongePanel(wx.Panel):
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 
-	def ToggleGraph(self, event):
-		self.currGraph = 1 - self.currGraph
-		if self.currGraph == 0:
-			self.graphDisplay.SetBitmap(self.velocityGraph)
-		else:
-			self.graphDisplay.SetBitmap(self.tensionGraph)
-		self.parent.fSizer.Layout()
-		self.parent.Fit()
-
 	def OnTrainingFinished(self, event):
 		
 		#ACTUAL CODE
@@ -120,8 +118,26 @@ class CytospongePanel(wx.Panel):
 		# self.dataAnalysisThread = threading.Thread(name="analyze-dataself.DataService.analyzeData()
 		uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
 		uploadThread.start()
+		self.DataService.analyzeData()
 		self.loadGraphImages()
 		self.displayGraphs()
+
+	def OnCheckParams(self, event):
+		if self.manualParameterControl.GetValue():
+			self.oesophagusLengthControl.Enable()
+			self.testCaseSelection.Enable()
+		else:
+			self.oesophagusLengthControl.Disable()
+			self.testCaseSelection.Disable()
+
+	def ToggleGraph(self, event):
+		self.currGraph = 1 - self.currGraph
+		if self.currGraph == 0:
+			self.graphDisplay.SetBitmap(self.velocityGraph)
+		else:
+			self.graphDisplay.SetBitmap(self.tensionGraph)
+		self.parent.fSizer.Layout()
+		self.parent.Fit()
 
 	def setTrainingFinished(self):
 		self.EventService.postTrainingFinished()
