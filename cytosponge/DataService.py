@@ -8,6 +8,9 @@ from scipy.special import gamma
 class DataService:
 	AcceptableRange = 0.1
 	ForceScoreConstant = 1
+	VelocityScoreConstant = 1
+	AccelerationScaling = 1
+	AccelerationScoreConstant = 1
 	TimeScoreConstant = 1
 	GammaDistAlpha = 1.5
 	GammaDistTheta = 1.75
@@ -23,6 +26,7 @@ class DataService:
 		self.time = [0, 1, 2, 3, 4]
 		self.displacement = []
 		self.velocity = [0, 1, 2, 3, 4]
+		self.targetVelocity = 1
 		self.demandForce = []
 		self.idealForce = []
 		self.lowerBoundV = []
@@ -64,9 +68,9 @@ class DataService:
 		### TBD
 		# Calculate lower and upper bounds for a particular model
 		# self.demandForce = self.calculateModelForce()
-		# self.idealForce = self.calculateIdealForce()
-		# self.lowerBoundV, self.upperBoundV = self.calculateVelocityBounds(self.idealForce)
-		# self.lowerBoundT, self.upperBoundT = self.calculateForceBounds(self.idealForce)
+		# self.targetForce = self.calculateTargetForce()
+		# self.lowerBoundV, self.upperBoundV = self.calculateVelocityBounds(self.targetForce)
+		# self.lowerBoundT, self.upperBoundT = self.calculateForceBounds(self.targetForce)
 
 		# Plot data
 		self.plotVelocity()
@@ -120,15 +124,15 @@ class DataService:
 		#TBD
 		return modelForce
 
-	def calculateIdealForce(self):
-		idealForce = []
+	def calculateTargetForce(self):
+		targetForce = []
 		# base model function
 		# scale flat parts by oesophagus length
 		# scale peaks by sphincter strength
 		# scale peaks if seizing/panic
 		# add additional peaks if test case is seizing
 		# convert to time using velocity, locally apply Jacobian based on measurements
-		return idealForce
+		return targetForce
 
 	def calculateVelocityBounds(self, idealForce):
 		lowerBoundV = []
@@ -155,14 +159,15 @@ class DataService:
 		feedback = ""
 		score = 0
 		for idx, force in enumerate(self.tension):
-			complexValue = 1 + 2j*(force - self.idealForce)/(self.upperBoundT[idx] - self.lowerBoundT[idx])
-			score += DataService.ForceScoreConstant*(-20*math.log10(abs(complexValue)) + 3)
+			score = score + DataService.lowPass(force, self.targetForce, self.upperBoundT[idx] - self.lowerBoundT[idx], DataService.ForceScoreConstant)
 		return (score, feedback)
 
 	def scoreFromVelocity(self):
 		#TBD
 		feedback = ""
-		score = 0
+		for idx, velocity in enumerate(self.velocity):
+			score = score + DataService.lowPass(self.acceleration[idx], 0, DataService.AccelerationScaling, DataService.AccelerationScoreConstant)
+			score = score + DataService.lowPass(velocity, self.targetVelocity, self.targetVelocity*0.5, DataService.VelocityScoreConstant)
 		return (score, feedback)
 
 	def scoreFromTime(self):
@@ -197,3 +202,9 @@ class DataService:
 		for i in range(1,len(data)):
 			dData.append((data[i]-data[i-1])/time_increment)
 		return dData
+
+	@staticmethod
+	def lowPass(data, target, cutoff, scaling):
+		complexValue = 1 + 1j*(data - target)/(cutoff)
+		magnitude = scaling*(-20*math.log10(abs(complexValue)) + 3)
+		return magnitude
