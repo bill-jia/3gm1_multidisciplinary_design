@@ -18,20 +18,28 @@ class CytospongePanel(wx.Panel):
 
 		# Initialize data analysis and manipulation
 		self.DataService = cytosponge.DataService()
+		self.CommandService = cytosponge.CommandService()
 
 		# Create sizers for layout
-		self.mainSizer = wx.BoxSizer(wx.VERTICAL)
-		self.controlSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.mainSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.controlSizer = wx.BoxSizer(wx.VERTICAL)
+		self.startStopSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.graphDisplaySizer = wx.BoxSizer(wx.HORIZONTAL)
 
 
-		#Start and stop buttons
+		# Start and stop buttons
 		self.startButton = wx.Button(self, label="Start")
 		self.stopButton = wx.Button(self, label="Stop")
 		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
 		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)
-		self.controlSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
-		self.controlSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+
+		# Add controls
+		self.manualParameterControl = wx.CheckBox(self, label= "Set Parameters")
+		self.oesophagusLengthControl = wx.Slider(self, value=25, minValue=10, maxValue=50, style = wx.SL_LABELS)
+		self.testCaseSelection = wx.ComboBox(self, value="Normal", choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
+
 
 		# Set up plot area
 
@@ -57,7 +65,11 @@ class CytospongePanel(wx.Panel):
 		# Bind software events
 		self.Bind(self.EventService.EVT_TRAINING_FINISHED, self.OnTrainingFinished)
 
-		self.mainSizer.Add(self.controlSizer, 0, wx.CENTER)
+		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
+		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL, 10)
+		self.controlSizer.Add(self.oesophagusLengthControl, 0, wx.CENTER|wx.ALL, 10)
+		self.controlSizer.Add(self.testCaseSelection, 0, wx.CENTER|wx.ALL, 10)
+		self.mainSizer.Add(self.controlSizer, 0, wx.ALIGN_TOP)
 		self.mainSizer.Add(self.graphDisplaySizer, 0, wx.CENTER|wx.ALL, 10)
 		self.SetSizer(self.mainSizer)
 
@@ -105,10 +117,9 @@ class CytospongePanel(wx.Panel):
 		#self.DataService.analyzeData(self.serialCommsService.getIncomingData())
 		
 		#WITHOUT SERIAL
-		self.DataService.analyzeData()
+		# self.dataAnalysisThread = threading.Thread(name="analyze-dataself.DataService.analyzeData()
 		uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
 		uploadThread.start()
-		uploadThread.join()
 		self.loadGraphImages()
 		self.displayGraphs()
 
