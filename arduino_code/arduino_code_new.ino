@@ -35,6 +35,9 @@ int timeIntervalMillis;
 byte count;
 String str = "";
 String Tstr, Dstr, str1, str2;
+//to delete
+int time_increment = 0.25;
+int state = -1;
 
 //Parameters
 
@@ -194,7 +197,7 @@ void setup() {
     tension.push_back(0);     
   }
   //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);//we dont need this for a pot right?
-  Serial.println("Program start");
+  //Serial.println("Program start");
 }
 
 void loop() {
@@ -205,6 +208,21 @@ void loop() {
     state = Serial.parseInt();
     if (state == -1) {
       Serial.println("Leftover data");
+      for (int i = 0; i < data_points; i++) {
+        tension.pop_front();
+        tension.push_back(i);
+      } 
+      str1 = tension_array_to_string();
+      for (int i = 0; i < data_points; i++) {
+        displacement.pop_front();
+        displacement.push_back(i*1.0);
+      }
+  str2 = displacement_array_to_string(displacement);
+  //Serial.print(tension.size());
+      Serial.print("dt: " + String(time_increment) + " , ");
+      Serial.print("d: " + displacement_array_to_string(displacement) + " , ");
+      Serial.print("t: " + tension_array_to_string());
+      Serial.print("\n");  
     }
   }
   if (state == 1) {
@@ -213,20 +231,9 @@ void loop() {
   
 
   
-  /*
-  for (int i = 0; i < data_points; i++) {
-    tension.pop_front();
-    tension.push_back(i);
-  }
-  str1 = tension_array_to_string();
-  for (int i = 0; i < data_points; i++) {
-    displacement.pop_front();
-    displacement.push_back(i*1.0);
-  }
-  //str2 = float_array_to_string(displacement);
-  //Serial.print(tension.size());
-  Serial.print(str1);
-  */
+  
+
+  
   //delay (2000);
 
   /*
