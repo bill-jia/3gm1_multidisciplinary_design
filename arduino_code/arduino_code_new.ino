@@ -28,10 +28,13 @@ float e = 2.71828;
 float pi = 3.14159;
 float pot_calibrate = 1.0;  //calibration constant to convert voltage across pot into angular displacement
 int tension_read, tension_avg, pot_read, pot_avg;  //variables required to perform smoothing
-int data_points = 2;
-int present = data_points - 1;
-int previous = data_points - 2;
+byte data_points = 50;
+byte present = data_points - 1;
+byte previous = data_points - 2;
 int timeIntervalMillis;
+byte count;
+String str = "";
+String Tstr, Dstr, str1, str2;
 
 //Parameters
 
@@ -47,7 +50,7 @@ float variance2 = 100;
 float k_p, k_i, k_d, pot;
 QList<int> potSampled, tensionSampled, tension, timer; //so that we can take a time average of the readings in order to remove noise
 QList<float> displacement;
-QList<byte> force;
+byte force;
 int maxDisplacement, timeoutSec;
 
 
@@ -92,6 +95,33 @@ int timerStop() {        //stops the clock and returns the time elapsed since ti
   return timer[1]-timer[0];
 }
 
+//serial communication
+
+String displacement_array_to_string( QList<float> arr) {
+  str = "";
+  for (int i = 0; i < data_points; i++) {
+    float j = arr[i];
+    str += String(j) + " ";
+  }
+  return str;
+}
+
+String tension_array_to_string() {
+  String str = "";
+  Serial.print("called");
+  for (int i = 0; i < data_points; i++) {
+    int j = tension[i];
+    str += String(j) + " ";
+  }
+  Serial.print("cal");
+  return str;
+}
+
+void send_Data(QList<int> T, QList<float> D) {
+  Serial.println("Sending Data");
+  //Tstr = int_array_to_string(T);
+  //Dstr = float_array_to_string(D);
+}
 
 // ACTUATORS
 void stopMotor() {
@@ -132,9 +162,8 @@ float modelForce(float d) {
 }
 
 void controller(float d){   //open loop for now
-  force.pop_front();
-  force.push_back(modelForce(d));
-  brake(force[present]);
+  force = modelForce(d);
+  brake(force);
 }
 
 void resetVariables() {
@@ -151,17 +180,18 @@ void setup() {
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pot = 0;
+  count = 0;
+  force = 0;
   for (int i = 0; i < samples; i++){   //creating the stacks of size samples
     potSampled.push_back(0);
     tensionSampled.push_back(0);
   }
   for (int i = 0; i < 2; i++){
-    tension.push_back(0); 
     timer.push_back(0); 
   }
-  for (int i = 0; i < data_points; i++){   //same for kinematics 
+  for (int i = 0; i < data_points; i++){   //for force control
     displacement.push_back(0);
-    force.push_back(0);
+    tension.push_back(0);     
   }
   //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);//we dont need this for a pot right?
   Serial.println("Program start");
@@ -170,20 +200,38 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   //Stuff in main loop not permanent for now
+  for (int i = 0; i < data_points; i++) {
+    tension.pop_front();
+    tension.push_back(i);
+  }
+  str1 = tension_array_to_string();
+  for (int i = 0; i < data_points; i++) {
+    displacement.pop_front();
+    displacement.push_back(i*1.0);
+  }
+  //str2 = float_array_to_string(displacement);
+  //Serial.print(tension.size());
+  Serial.print(str1);
+  //delay (2000);
+
+  /*
   timerStart();
   readSensors();
-  delay(20);
+  delay(50);
   timeIntervalMillis = timerStop();
   calculateDisplacement();
-  /*Serial.print("Displacement: ");
-  Serial.print(displacement[present]);
-  Serial.print(" ");
-  Serial.print("Force: ");
-  Serial.print(" ");
-  Serial.println(modelForce(displacement[present]));*/
-  Serial.println(displacement[present]);
-  controller(displacement[present]);
+  count++;
+  Serial.println(count);
+  if (count > data_points) {
+    count = 0;
+    send_Data(tension, displacement);
+    //Serial.print(float_array_to_string(displacement));
+    
+  }
   
+  //Serial.println(displacement[present]);
+  //controller(displacement[present]);
+  */
 }
 
 
