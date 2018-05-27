@@ -36,6 +36,7 @@ class SerialCommunicationService:
 						print("Attempt to Read")
 						readOut = self.serialLink.readline().decode('ascii')
 						self.incomingData.put(readOut)
+						self.EventService.postTrainingFinished()
 						break
 					time.sleep(0.5)
 				except:
@@ -47,6 +48,7 @@ class SerialCommunicationService:
 						print("Attempt to Read")
 						readOut = self.serialLink.readline().decode('ascii')
 						self.incomingData.put(readOut)
+						self.EventService.postTrainingFinished()
 						break
 					time.sleep(0.5)
 				except:
@@ -65,7 +67,7 @@ class SerialCommunicationService:
 					time.sleep(0.25)
 				else:
 					break
-		self.EventService.postTrainingFinished()
+			self.EventService.postTrainingFinished()
 
 	def getIncomingData(self):
 		return self.incomingData.get()
