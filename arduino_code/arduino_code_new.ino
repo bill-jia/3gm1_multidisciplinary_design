@@ -100,10 +100,10 @@ int timerStop() {        //stops the clock and returns the time elapsed since ti
 
 //serial communication
 
-String displacement_array_to_string( QList<float> arr) {
-  str = "";
+String displacement_array_to_string() {
+  String str = "";
   for (int i = 0; i < data_points; i++) {
-    float j = arr[i];
+    float j = displacement[i];
     str += String(j) + " ";
   }
   return str;
@@ -217,7 +217,7 @@ void loop() {
         displacement.pop_front();
         displacement.push_back(i*1.0);
       }
-  str2 = displacement_array_to_string(displacement);
+  str2 = displacement_array_to_string();
   //Serial.print(tension.size());
       Serial.print("dt: " + String(time_increment) + " , ");
       Serial.print("d: " + displacement_array_to_string(displacement) + " , ");
