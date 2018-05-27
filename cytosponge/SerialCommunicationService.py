@@ -59,6 +59,7 @@ class SerialCommunicationService:
 					if self.serialLink.in_waiting > 0:
 						print("Attempt to Read")
 						readOut = self.serialLink.readline().decode('ascii')
+						print(readOut)
 						self.incomingData.put(readOut)
 						break
 					time.sleep(0.25)

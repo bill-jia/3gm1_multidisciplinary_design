@@ -81,8 +81,6 @@ class CytospongePanel(wx.Panel):
 		self.EventService.receivingData.clear()
 		# Collect incomplete data
 		self.serialCommsService.collectEndData()
-		self.parent.fSizer.Layout()
-		self.parent.Fit()
 
 	def ToggleGraph(self, event):
 		self.currGraph = 1 - self.currGraph
@@ -121,6 +119,7 @@ class CytospongePanel(wx.Panel):
 
 		self.graphDisplay.SetBitmap(self.velocityGraph)
 		self.currGraph = 0
+		print("Displaying Graphs")
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 

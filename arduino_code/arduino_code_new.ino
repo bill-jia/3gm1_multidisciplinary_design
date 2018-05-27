@@ -36,7 +36,7 @@ byte count;
 String str = "";
 String Tstr, Dstr, str1, str2;
 //to delete
-int time_increment = 0.25;
+int time_increment = 1;
 int state = -1;
 
 //Parameters
@@ -103,7 +103,7 @@ int timerStop() {        //stops the clock and returns the time elapsed since ti
 String displacement_array_to_string() {
   String str = "";
   for (int i = 0; i < data_points; i++) {
-    float j = displacement[i];
+    int j = (int)(displacement[i]);
     str += String(j) + " ";
   }
   return str;
@@ -111,12 +111,10 @@ String displacement_array_to_string() {
 
 String tension_array_to_string() {
   String str = "";
-  Serial.print("called");
   for (int i = 0; i < data_points; i++) {
     int j = tension[i];
     str += String(j) + " ";
   }
-  Serial.print("cal");
   return str;
 }
 
@@ -196,6 +194,16 @@ void setup() {
     displacement.push_back(0);
     tension.push_back(0);     
   }
+  
+      for (int i = 0; i < data_points; i++) {
+        tension.pop_front();
+        tension.push_back(i);
+      } 
+      for (int i = 0; i < data_points; i++) {
+        displacement.pop_front();
+        displacement.push_back(i*1.0);
+      }
+  
   //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);//we dont need this for a pot right?
   //Serial.println("Program start");
 }
@@ -207,20 +215,11 @@ void loop() {
   if (Serial.available() > 0) {
     state = Serial.parseInt();
     if (state == -1) {
-      Serial.println("Leftover data");
-      for (int i = 0; i < data_points; i++) {
-        tension.pop_front();
-        tension.push_back(i);
-      } 
-      str1 = tension_array_to_string();
-      for (int i = 0; i < data_points; i++) {
-        displacement.pop_front();
-        displacement.push_back(i*1.0);
-      }
-  str2 = displacement_array_to_string();
+      stopMotor();
+
   //Serial.print(tension.size());
       Serial.print("dt: " + String(time_increment) + " , ");
-      Serial.print("d: " + displacement_array_to_string(displacement) + " , ");
+      Serial.print("d: " + displacement_array_to_string() + " , ");
       Serial.print("t: " + tension_array_to_string());
       Serial.print("\n");  
     }
