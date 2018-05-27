@@ -200,6 +200,20 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   //Stuff in main loop not permanent for now
+  
+  if (Serial.available() > 0) {
+    state = Serial.parseInt();
+    if (state == -1) {
+      Serial.println("Leftover data");
+    }
+  }
+  if (state == 1) {
+    brake(400.0);
+  }
+  
+
+  
+  /*
   for (int i = 0; i < data_points; i++) {
     tension.pop_front();
     tension.push_back(i);
@@ -212,6 +226,7 @@ void loop() {
   //str2 = float_array_to_string(displacement);
   //Serial.print(tension.size());
   Serial.print(str1);
+  */
   //delay (2000);
 
   /*
