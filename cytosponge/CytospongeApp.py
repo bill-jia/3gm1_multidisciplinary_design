@@ -81,9 +81,6 @@ class CytospongePanel(wx.Panel):
 		self.EventService.receivingData.clear()
 		# Collect incomplete data
 		self.serialCommsService.collectEndData()
-		self.parent.SetStatusText("Training stopped")
-		self.new_button = wx.Button(self, label="test", name="test")
-		self.graphDisplaySizer.Add(self.new_button, 0, wx.ALL, 5)
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 
