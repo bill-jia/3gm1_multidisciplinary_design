@@ -5,6 +5,9 @@ import numpy as np
 import copy
 
 class DataService:
+
+	testCaseMatrix = ["Normal", "Seizing", "Panic"]
+
 	def __init__(self):
 
 
@@ -45,6 +48,9 @@ class DataService:
 				self.testCase = testCase
 			self.updateOL = False
 			self.updateTestCase = False
+		else:
+			self.oesophagusLength = np.random.randint(10, 51)
+			self.testCase = DataService.testCaseMatrix[np.random.randint(3)]
 
 	def parseData(self, data):
 		print(data)
