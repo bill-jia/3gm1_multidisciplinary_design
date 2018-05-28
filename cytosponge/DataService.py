@@ -28,11 +28,23 @@ class DataService:
 
 		self.tension = [5, 3, 8, 2, 1]
 		self.acceleration = []
+		self.manualParameterControl = False
+		self.updateOL = False
+		self.updateTestCase = False
 		self.oesophagusLength = 30
 		self.sphincterStrength = 1
-		self.testCase = "normal" # Normal, seize, or patient panic
+		self.testCase = "Normal" # Normal, Seize, or Panic
 		self.score = 0
 		self.feedback = ""
+
+	def updateParameters(self, oesophagusLength, testCase):
+		if self.manualParameterControl:
+			if self.updateOL:
+				self.oesophagusLength = oesophagusLength
+			if self.updateTestCase:
+				self.testCase = testCase
+			self.updateOL = False
+			self.updateTestCase = False
 
 	def parseData(self, data):
 		print(data)
@@ -91,6 +103,8 @@ class DataService:
 
 	def uploadData(self):
 		data = self.wrapDataJSON()
+		self.velocityGraphUpload.seek(0)
+		self.tensionGraphUpload.seek(0)
 		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
 		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
 		self.httpService.createPlateInstance(data, self.currentUser)

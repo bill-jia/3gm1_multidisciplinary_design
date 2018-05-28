@@ -35,15 +35,14 @@ class CytospongePanel(wx.Panel):
 
 		# Add controls
 		self.manualParameterControl = wx.CheckBox(self, label= "Set Parameters")
-		self.oesophagusLengthControl = wx.Slider(self, value=25, minValue=10, maxValue=50, style = wx.SL_LABELS)
-		self.testCaseSelection = wx.ComboBox(self, value="Normal", choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
+		self.oesophagusLengthControl = wx.Slider(self, value=self.DataService.oesophagusLength, minValue=10, maxValue=50, style = wx.SL_LABELS)
+		self.testCaseSelection = wx.ComboBox(self, value=self.DataService.testCase, choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckParams, self.manualParameterControl)
-		# self.Bind(wx.EVT_SCROLL_THUMBRELEASE, self.OnOLSlide, self.oesophagusLengthControl)
-		# self.Bind(wx.EVT_COMBOBOX, self.OnSelectTest, self.testCaseSelection)
+		self.Bind(wx.EVT_SCROLL_CHANGED, self.OnOLSlide, self.oesophagusLengthControl)
+		self.Bind(wx.EVT_COMBOBOX, self.OnSelectTest, self.testCaseSelection)
 		self.oesophagusLengthControl.Disable()
 		self.testCaseSelection.Disable()
-
-
+		# Flags to indicate whether parameter update is necessary before starting a test
 		# Set up plot area
 
 		# Test Image
@@ -83,7 +82,9 @@ class CytospongePanel(wx.Panel):
 		self.currGraph = 0
 
 	def OnClickStart(self, event):
-		
+		self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
+		print(self.DataService.oesophagusLength)
+		print(self.DataService.testCase)
 		# ACTUAL CODE
 		# self.EventService.trainingFinished.clear()
 		# self.serialCommsService.writeData(CytospongeApp.startSignal)
@@ -116,19 +117,27 @@ class CytospongePanel(wx.Panel):
 		
 		#WITHOUT SERIAL
 		# self.dataAnalysisThread = threading.Thread(name="analyze-dataself.DataService.analyzeData()
+		self.DataService.analyzeData()
 		uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
 		uploadThread.start()
-		self.DataService.analyzeData()
 		self.loadGraphImages()
 		self.displayGraphs()
 
 	def OnCheckParams(self, event):
-		if self.manualParameterControl.GetValue():
+		self.DataService.manualParameterControl = self.manualParameterControl.GetValue()
+		if self.DataService.manualParameterControl:
 			self.oesophagusLengthControl.Enable()
 			self.testCaseSelection.Enable()
 		else:
 			self.oesophagusLengthControl.Disable()
 			self.testCaseSelection.Disable()
+
+	def OnOLSlide(self, event):
+		self.DataService.updateOL = True
+
+	def OnSelectTest(self, event):
+		self.DataService.updateTestCase = True
+
 
 	def ToggleGraph(self, event):
 		self.currGraph = 1 - self.currGraph
