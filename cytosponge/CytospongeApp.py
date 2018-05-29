@@ -182,8 +182,8 @@ class CytospongePanel(wx.Panel):
 		self.tensionIm = wx.Image(self.DataService.tensionGraph)
 
 	def displayGraphs(self):
-		self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY, wx.IMAGE_QUALITY_HIGH))
-		self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY, wx.IMAGE_QUALITY_HIGH))
+		self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY, quality=wx.IMAGE_QUALITY_HIGH))
+		self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY, quality=wx.IMAGE_QUALITY_HIGH))
 
 		self.graphDisplaySizer.Show(0)
 		self.graphDisplaySizer.Show(2)
@@ -201,8 +201,8 @@ class CytospongePanel(wx.Panel):
 			newPanelX, newPanelY = self.parent.GetSize()
 			newBMPX = CytospongePanel.initialBMPX + (newPanelX-CytospongePanel.initialPanelX)
 			newBMPY = CytospongePanel.initialBMPY + (newPanelY-CytospongePanel.initialPanelY)
-			self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(newBMPX,newBMPY), wx.IMAGE_QUALITY_HIGH)
-			self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(newBMPX, newBMPY), wx.IMAGE_QUALITY_HIGH)
+			self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(newBMPX,newBMPY, quality=wx.IMAGE_QUALITY_HIGH))
+			self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(newBMPX, newBMPY, quality=wx.IMAGE_QUALITY_HIGH))
 			self.graphDisplay.SetBitmap(self.graphs[self.currGraph])
 
 class CytospongeApp(wx.Frame):
