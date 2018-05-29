@@ -9,9 +9,9 @@ class HTTPService:
 	def __init__(self):
 		self.placeholder = 0
 
-		self.cert_path = "l2s2_info\\certificate.crt"
-		self.key_path = "l2s2_info\\key.decrypted.key"
-		f = open("l2s2_info\\apikey.txt", 'r')
+		self.cert_path = "l2s2_info/certificate.crt"
+		self.key_path = "l2s2_info/key.decrypted.key"
+		f = open("l2s2_info/apikey.txt", 'r')
 		self.api_key = f.readline()
 		self.base_url = "https://cued2018.xenplate.com/api"
 		self.plate_template_id = "8114813b-6887-4ca2-a4b0-792ad633468d"
@@ -33,8 +33,11 @@ class HTTPService:
 		prepped.headers.update(headers)
 		#print(prepped.headers)
 		resp = self.session.send(prepped)
-		# HTTPService.printResponse(resp)
-		return resp.json()
+		HTTPService.printResponse(resp)
+		try:
+			return resp.json()
+		except ValueError:
+			return {}
 
 	def getRecord(self, id):
 		params = {"record_id": id}

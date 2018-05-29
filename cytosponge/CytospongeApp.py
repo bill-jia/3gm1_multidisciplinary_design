@@ -46,8 +46,6 @@ class CytospongePanel(wx.Panel):
 		# Set up plot area
 
 		# Test Image
-		testPath = "data/test0.png"
-		testIm = wx.Image(testPath).Rescale(600, 400)
 		self.graphDisplay = wx.StaticBitmap(self, id=-1, size=(600, 400))
 
 		# Initialize plot bitmap placeholders
