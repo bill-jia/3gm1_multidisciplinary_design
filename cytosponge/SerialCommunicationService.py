@@ -29,6 +29,7 @@ class SerialCommunicationService:
 
 	def collectEndData(self):
 		self.logger.debug("Reading on serial link from stop button")
+		self.EventService.receivingData.clear()
 		self.dataListeningThread = threading.Thread(name="data-listening", target = self.readSerialData, args=(None, 2))
 		self.dataListeningThread.start()
 
