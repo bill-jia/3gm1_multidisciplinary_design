@@ -40,7 +40,6 @@ class SerialCommunicationService:
 		while tryToRead:
 			try:
 				if self.serialLink.in_waiting > 0:
-					print("Attempt to Read")
 					readOut = self.serialLink.readline().decode('ascii')
 					self.incomingData.put(readOut)
 					self.EventService.clearReceivingData()

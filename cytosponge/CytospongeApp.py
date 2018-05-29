@@ -198,7 +198,6 @@ class CytospongePanel(wx.Panel):
 	def ResizeGraph(self, event):
 		event.Skip()
 		if self.graphsReady:
-			print(self.parent.GetSize())
 			newPanelX, newPanelY = self.parent.GetSize()
 			newBMPX = CytospongePanel.initialBMPX + (newPanelX-CytospongePanel.initialPanelX)
 			newBMPY = CytospongePanel.initialBMPY + (newPanelY-CytospongePanel.initialPanelY)
@@ -229,12 +228,18 @@ class CytospongeApp(wx.Frame):
 		self.SetSizer(self.fSizer)
 
 		# Set events
-		# 
+		self.Bind(wx.EVT_CLOSE, self.terminateApp, self)
+
 		#Create a status bar
 		self.CreateStatusBar()
 		self.SetStatusText("Welcome to Cytosponge Training! Start a Test!")
 		time.sleep(2)
 		self.runApp()
+
+	def terminateApp(self, event):
+		self.panel.serialCommsService.writeData(CytospongeApp.endSignal)
+		self.panel.logger.info("Program closed")
+		event.Skip()
 
 	def runApp(self):
 		self.Fit()
