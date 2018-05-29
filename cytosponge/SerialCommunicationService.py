@@ -38,7 +38,7 @@ class SerialCommunicationService:
 						self.incomingData.put(readOut)
 						self.EventService.postTrainingFinished()
 						break
-					time.sleep(0.5)
+					time.sleep(0.25)
 				except:
 					pass
 		elif timeout is None:
@@ -50,7 +50,7 @@ class SerialCommunicationService:
 						self.incomingData.put(readOut)
 						self.EventService.postTrainingFinished()
 						break
-					time.sleep(0.5)
+					time.sleep(0.25)
 				except:
 					pass
 		else:

@@ -3,8 +3,9 @@ import cytosponge
 testCase = 1
 oesophagusLength = 30
 
-COMport = 'COM5'
-
+comfile = open("com.txt")
+COMport = comfile.readline()[0:-1]
+comfile.close()
 if __name__ == '__main__':
 	app = cytosponge.CytospongeApp(COMport, None, title="Cytosponge Training", size=(1000,600))
 	

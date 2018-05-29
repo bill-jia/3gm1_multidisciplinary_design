@@ -24,7 +24,11 @@ void loop() {
   if (Serial.available() > 0) {
     state = Serial.parseInt();
     if (state == -1) {
-      Serial.println("Leftover data");
+      Serial.print("dt: " + String(time_increment) + " , ");
+      Serial.print("d: " + array_to_string(displacement) + " , ");
+      Serial.print("f: " + array_to_string(force));
+      Serial.print("\n");
+      state_duration = 0;
     }
   }
   //Serial.println(temp_state);
