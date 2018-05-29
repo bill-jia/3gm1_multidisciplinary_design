@@ -108,14 +108,18 @@ class DataService:
 		return data
 
 	def uploadData(self):
-		data = self.wrapDataJSON()
-		self.velocityGraphUpload.seek(0)
-		self.tensionGraphUpload.seek(0)
-		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
-		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
-		self.httpService.createPlateInstance(data, self.currentUser)
-		self.velocityGraphUpload.seek(0)
-		self.tensionGraphUpload.seek(0)
+		self.httpService.testConnection()
+		if not self.httpService.serviceAvailable:
+			print("L2S2 Service not available")
+		else:
+			data = self.wrapDataJSON()
+			self.velocityGraphUpload.seek(0)
+			self.tensionGraphUpload.seek(0)
+			data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
+			data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
+			self.httpService.createPlateInstance(data, self.currentUser)
+			self.velocityGraphUpload.seek(0)
+			self.tensionGraphUpload.seek(0)
 
 	def arrayToString(self, array):
 		outputString = ""

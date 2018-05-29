@@ -5,6 +5,7 @@ import io
 class HTTPService:
 	POST = "POST"
 	GET = "GET"
+	timeout = (3.05, 27)
 
 	def __init__(self):
 		self.placeholder = 0
@@ -18,6 +19,7 @@ class HTTPService:
 		self.plate_template_version = 10
 		self.current_user = 8
 		self.session = self.getSession(self.api_key, self.cert_path, self.key_path)
+		self.serviceAvailable = True
 
 
 	def getSession(self, api_key, cert_path, key_path):
@@ -32,16 +34,25 @@ class HTTPService:
 		prepped = self.session.prepare_request(req)
 		prepped.headers.update(headers)
 		#print(prepped.headers)
-		resp = self.session.send(prepped)
+		resp = self.session.send(prepped, timeout = HTTPService.timeout)
 		HTTPService.printResponse(resp)
+		if resp.status_code == 404:
+			return {}
+		elif resp.status_code == 503:
+			self.serviceAvailable = False
+			return {}
 		try:
+			self.serviceAvailable = True
 			return resp.json()
 		except ValueError:
 			return {}
 
+	def testConnection(self):
+		return self.makeRequest("/file/connect", HTTPService.GET)
+
 	def getRecord(self, id):
 		params = {"record_id": id}
-		resp = self.makeRequest("/record/read", GET, params = params)
+		resp = self.makeRequest("/record/read", HTTPService.GET, params = params)
 		return resp
 
 	def createRecord(self, first_names, surname, date_of_birth, id_number):
@@ -65,7 +76,7 @@ class HTTPService:
 		return resp
 
 	def uploadFile(self, data, fileName):
-		dummyResp = self.makeRequest("/file/connect", HTTPService.GET)
+		self.testConnection()
 		resp = self.makeRequest("/file/create", HTTPService.POST, headers={"X-Xenplate-File-Name": fileName}, data=data)
 		return (resp["FileCreateResult"]["file_id"], fileName)
 
