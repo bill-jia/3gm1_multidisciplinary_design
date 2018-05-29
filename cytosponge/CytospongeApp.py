@@ -7,6 +7,10 @@ import logging
 import sys
 
 class CytospongePanel(wx.Panel):
+	initialBMPX = 600
+	initialBMPY = 400
+	initialPanelX = 1150
+	initialPanelY = 510
 	def __init__(self, parent, COMport):
 		wx.Panel.__init__(self, parent)
 		self.parent = parent
@@ -56,7 +60,7 @@ class CytospongePanel(wx.Panel):
 
 		# Create sizers for layout
 		self.mainSizer = wx.BoxSizer(wx.HORIZONTAL)
-		self.controlSizer = wx.BoxSizer(wx.VERTICAL)
+		self.controlSizer = wx.StaticBoxSizer(wx.VERTICAL,self,label="Controls")
 		self.startStopSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.graphDisplaySizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -80,11 +84,12 @@ class CytospongePanel(wx.Panel):
 		# Set up plot area
 
 		# Test Image
-		self.graphDisplay = wx.StaticBitmap(self, id=-1, size=(600, 400))
+		self.graphDisplay = wx.StaticBitmap(self, id=-1, size=(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY))
+		self.graphsReady = False
 
 		# Initialize plot bitmap placeholders
-		self.velocityGraph = wx.Bitmap()
-		self.tensionGraph = wx.Bitmap()
+		self.graphs = [wx.Bitmap(), wx.Bitmap()] # 0 is velocity, 1 is tension
+		self.currGraph = 0
 		self.prevButton = wx.Button(self, label="Prev")
 		self.nextButton = wx.Button(self,label="Next")
 		self.Bind(wx.EVT_BUTTON, self.ToggleGraph, self.prevButton)
@@ -104,14 +109,16 @@ class CytospongePanel(wx.Panel):
 		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
-		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL, 10)
-		self.controlSizer.Add(self.oesophagusLengthControl, 0, wx.CENTER|wx.ALL, 10)
-		self.controlSizer.Add(self.testCaseSelection, 0, wx.CENTER|wx.ALL, 10)
-		self.mainSizer.Add(self.controlSizer, 0, wx.ALIGN_TOP)
-		self.mainSizer.Add(self.graphDisplaySizer, 0, wx.CENTER|wx.ALL, 10)
+		staticBox1 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Oesophagus Length (cm)")
+		staticBox2 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Test Case")
+		staticBox1.Add(self.oesophagusLengthControl, 1, wx.CENTER|wx.EXPAND|wx.FIXED_MINSIZE, 10)
+		staticBox2.Add(self.testCaseSelection, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER|wx.EXPAND, 10)
+		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+		self.controlSizer.Add(staticBox1, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+		self.controlSizer.Add(staticBox2, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+		self.mainSizer.Add(self.controlSizer, 0, wx.ALIGN_TOP|wx.ALL|wx.FIXED_MINSIZE, 10)
+		self.mainSizer.Add(self.graphDisplaySizer, 0, wx.ALIGN_TOP|wx.ALL, 10)
 		self.SetSizer(self.mainSizer)
-
-		self.currGraph = 0
 
 	def OnClickStart(self, event):
 		if not self.EventService.receivingData.isSet():
@@ -164,31 +171,40 @@ class CytospongePanel(wx.Panel):
 
 	def ToggleGraph(self, event):
 		self.currGraph = 1 - self.currGraph
-		if self.currGraph == 0:
-			self.graphDisplay.SetBitmap(self.velocityGraph)
-		else:
-			self.graphDisplay.SetBitmap(self.tensionGraph)
+		self.graphDisplay.SetBitmap(self.graphs[self.currGraph])
 		self.parent.fSizer.Layout()
-		self.parent.Fit()
 
 	def setTrainingFinished(self):
 		self.EventService.postTrainingFinished()
 
 	def loadGraphImages(self):
-		self.velocityIm = wx.Image(self.DataService.velocityGraph).Rescale(600,400)
-		self.tensionIm = wx.Image(self.DataService.tensionGraph).Rescale(600,400)
+		self.velocityIm = wx.Image(self.DataService.velocityGraph)
+		self.tensionIm = wx.Image(self.DataService.tensionGraph)
 
 	def displayGraphs(self):
-		self.velocityGraph = wx.Bitmap(self.velocityIm)
-		self.tensionGraph = wx.Bitmap(self.tensionIm)
+		self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY))
+		self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY))
 
 		self.graphDisplaySizer.Show(0)
 		self.graphDisplaySizer.Show(2)
-
-		self.graphDisplay.SetBitmap(self.velocityGraph)
+		
 		self.currGraph = 0
+		self.graphDisplay.SetBitmap(self.graphs[self.currGraph])
+		self.parent.SetMinSize((850,375))
 		self.parent.fSizer.Layout()
-		self.parent.Fit()
+		self.parent.SetSize((CytospongePanel.initialPanelX,CytospongePanel.initialPanelY))
+		self.graphsReady = True
+
+	def ResizeGraph(self, event):
+		event.Skip()
+		if self.graphsReady:
+			print(self.parent.GetSize())
+			newPanelX, newPanelY = self.parent.GetSize()
+			newBMPX = CytospongePanel.initialBMPX + (newPanelX-CytospongePanel.initialPanelX)
+			newBMPY = CytospongePanel.initialBMPY + (newPanelY-CytospongePanel.initialPanelY)
+			self.graphs[0] = wx.Bitmap(self.velocityIm.Rescale(newBMPX,newBMPY))
+			self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(newBMPX, newBMPY))
+			self.graphDisplay.SetBitmap(self.graphs[self.currGraph])
 
 class CytospongeApp(wx.Frame):
 
@@ -203,7 +219,7 @@ class CytospongeApp(wx.Frame):
 
 		# Initialize superclass
 		super(CytospongeApp, self).__init__(*args, **kw)
-
+		self.SetMinSize((265,375))
 		#Create a panel
 		self.panel = CytospongePanel(self, COMport)
 
@@ -211,6 +227,9 @@ class CytospongeApp(wx.Frame):
 		self.fSizer = wx.BoxSizer(wx.VERTICAL)
 		self.fSizer.Add(self.panel, 1, wx.EXPAND)
 		self.SetSizer(self.fSizer)
+
+		# Set events
+		# 
 		#Create a status bar
 		self.CreateStatusBar()
 		self.SetStatusText("Welcome to Cytosponge Training! Start a Test!")
@@ -219,5 +238,7 @@ class CytospongeApp(wx.Frame):
 
 	def runApp(self):
 		self.Fit()
+		self.SetSize((265,375))
 		self.Show()
+		self.Bind(wx.EVT_SIZE, self.panel.ResizeGraph, self)
 		self.uiApp.MainLoop()
