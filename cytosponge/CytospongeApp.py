@@ -218,7 +218,7 @@ class CytospongeApp(wx.Frame):
 
 		# Initialize superclass
 		super(CytospongeApp, self).__init__(*args, **kw)
-		self.SetMinSize((265,375))
+		self.SetMinSize((265,400))
 		#Create a panel
 		self.panel = CytospongePanel(self, COMport)
 
@@ -243,7 +243,7 @@ class CytospongeApp(wx.Frame):
 
 	def runApp(self):
 		self.Fit()
-		self.SetSize((265,375))
+		self.SetSize((265,400))
 		self.Show()
 		self.Bind(wx.EVT_SIZE, self.panel.ResizeGraph, self)
 		self.uiApp.MainLoop()
