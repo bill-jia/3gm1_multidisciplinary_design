@@ -3,12 +3,15 @@ import matplotlib.pyplot as plt
 import io
 import numpy as np
 import copy
+import logging
 
 class DataService:
 
 	testCaseMatrix = ["Normal", "Seizing", "Panic"]
 
 	def __init__(self):
+		# Initialize logging
+		self.logger = logging.getLogger("cytosponge_training.DataService")
 
 
 		#Initialize connection to L2S2
@@ -108,9 +111,7 @@ class DataService:
 
 	def uploadData(self):
 		self.httpService.testConnection()
-		if not self.httpService.serviceAvailable:
-			print("L2S2 Service not available")
-		else:
+		if self.httpService.serviceAvailable:
 			data = self.wrapDataJSON()
 			self.velocityGraphUpload.seek(0)
 			self.tensionGraphUpload.seek(0)

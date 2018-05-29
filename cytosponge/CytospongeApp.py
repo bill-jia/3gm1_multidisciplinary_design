@@ -3,22 +3,56 @@ import wx
 import threading
 import time
 import numpy as np
-
+import logging
+import sys
 
 class CytospongePanel(wx.Panel):
 	def __init__(self, parent, COMport):
 		wx.Panel.__init__(self, parent)
 		self.parent = parent
-
+		# Initialize logging
+		self.logger = logging.getLogger('cytosponge_training')
+		self.logger.setLevel(logging.DEBUG)
+		logfilehandler = logging.FileHandler('cytosponge.log')
+		logfilehandler.setLevel(logging.DEBUG)
+		consolehandler = logging.StreamHandler()
+		consolehandler.setLevel(logging.ERROR)
+		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		logfilehandler.setFormatter(formatter)
+		consolehandler.setFormatter(formatter)
+		self.logger.addHandler(logfilehandler)
+		self.logger.addHandler(consolehandler)
+		self.logger.info("Program started")
 		# Initialize event signalling
-		self.EventService = cytosponge.EventService(self)
+		try:
+			self.EventService = cytosponge.EventService(self)
+			self.logger.info("Event service initialized")
+		except Exception as e:
+			self.logger.error(cytosponge.format_error_message(e))
+			sys.exit()
 
 		# Initialize serial communications service
-		self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
+		try:
+			self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
+			self.logger.info("Serial communications initialized")
+		except Exception as e:
+			self.logger.error(cytosponge.format_error_message(e))
+			sys.exit()
 
 		# Initialize data analysis and manipulation
-		self.DataService = cytosponge.DataService()
-		self.CommandService = cytosponge.CommandService()
+		try:
+			self.DataService = cytosponge.DataService()
+			self.logger.info("Data service initialized")
+		except Exception as e:
+			self.logger.error(cytosponge.format_error_message(e))
+			sys.exit()
+
+		try:
+			self.CommandService = cytosponge.CommandService()
+			self.logger.info("Command service initialized")
+		except Exception as e:
+			self.logger.error(cytosponge.format_error_message(e))
+			sys.exit()
 
 		# Create sizers for layout
 		self.mainSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -80,14 +114,14 @@ class CytospongePanel(wx.Panel):
 		self.currGraph = 0
 
 	def OnClickStart(self, event):
-		self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
-		print(self.DataService.oesophagusLength)
-		print(self.DataService.testCase)
-		# ACTUAL CODE
-		self.serialCommsService.writeData(CytospongeApp.startSignal)
-		self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
-		self.EventService.receivingData.set()
-		self.parent.SetStatusText("Training in progress")
+		if not self.EventService.receivingData.isSet():
+			self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
+			self.logger.info("Test started with parameters: OL - " + str(self.DataService.oesophagusLength) + ", TC - " + str(self.DataService.testCase))
+			# ACTUAL CODE
+			self.serialCommsService.writeData(CytospongeApp.startSignal)
+			self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
+			self.EventService.setReceivingData()
+			self.parent.SetStatusText("Training in progress")
 
 		# No arduino test code
 		# t = threading.Timer(2.0, self.setTrainingFinished)
@@ -95,10 +129,11 @@ class CytospongePanel(wx.Panel):
 
 
 	def OnClickStop(self, event):
-		self.serialCommsService.writeData(CytospongeApp.endSignal)
-		self.EventService.receivingData.clear()
-		# Collect incomplete data
-		self.serialCommsService.collectEndData()
+		if self.EventService.receivingData.isSet():
+			self.serialCommsService.writeData(CytospongeApp.endSignal)
+			self.logger.warn("Test stopped manually")
+			# Collect incomplete data
+			self.serialCommsService.collectEndData()
 
 	def OnTrainingFinished(self, event):
 		
@@ -152,7 +187,6 @@ class CytospongePanel(wx.Panel):
 
 		self.graphDisplay.SetBitmap(self.velocityGraph)
 		self.currGraph = 0
-		print("Displaying Graphs")
 		self.parent.fSizer.Layout()
 		self.parent.Fit()
 
