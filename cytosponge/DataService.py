@@ -5,6 +5,9 @@ import numpy as np
 import copy
 
 class DataService:
+
+	testCaseMatrix = ["Normal", "Seizing", "Panic"]
+
 	def __init__(self):
 
 
@@ -28,11 +31,26 @@ class DataService:
 
 		self.tension = [5, 5, 5, 5, 5]
 		self.acceleration = []
+		self.manualParameterControl = False
+		self.updateOL = False
+		self.updateTestCase = False
 		self.oesophagusLength = 30
 		self.sphincterStrength = 1
-		self.testCase = "normal" # Normal, seize, or patient panic
+		self.testCase = "Normal" # Normal, Seize, or Panic
 		self.score = 0
 		self.feedback = ""
+
+	def updateParameters(self, oesophagusLength, testCase):
+		if self.manualParameterControl:
+			if self.updateOL:
+				self.oesophagusLength = oesophagusLength
+			if self.updateTestCase:
+				self.testCase = testCase
+			self.updateOL = False
+			self.updateTestCase = False
+		else:
+			self.oesophagusLength = np.random.randint(10, 51)
+			self.testCase = DataService.testCaseMatrix[np.random.randint(3)]
 
 	def parseData(self, data):
 		arrays = data.split(" , ")
@@ -89,12 +107,18 @@ class DataService:
 		return data
 
 	def uploadData(self):
-		data = self.wrapDataJSON()
-		data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
-		data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
-		self.httpService.createPlateInstance(data, self.currentUser)
-		self.velocityGraphUpload.seek(0)
-		self.tensionGraphUpload.seek(0)
+		self.httpService.testConnection()
+		if not self.httpService.serviceAvailable:
+			print("L2S2 Service not available")
+		else:
+			data = self.wrapDataJSON()
+			self.velocityGraphUpload.seek(0)
+			self.tensionGraphUpload.seek(0)
+			data["velocity_graph"], data["velocity_graph_name"] = self.httpService.uploadFile(self.velocityGraphUpload, "velocity_graph.png")
+			data["tension_graph"], data["tension_graph_name"] = self.httpService.uploadFile(self.tensionGraphUpload, "tension_graph.png")
+			self.httpService.createPlateInstance(data, self.currentUser)
+			self.velocityGraphUpload.seek(0)
+			self.tensionGraphUpload.seek(0)
 
 	def arrayToString(self, array):
 		outputString = ""
