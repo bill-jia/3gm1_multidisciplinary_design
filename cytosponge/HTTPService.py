@@ -1,6 +1,7 @@
 import cytosponge
 import requests
 import io
+import socket
 
 class HTTPService:
 	POST = "POST"
@@ -19,8 +20,16 @@ class HTTPService:
 		self.plate_template_version = 10
 		self.current_user = 8
 		self.session = self.getSession(self.api_key, self.cert_path, self.key_path)
-		self.serviceAvailable = True
+		self.serviceAvailable = self.internetConnectionAvailable()
 
+	def internetConnectionAvailable(self, host="8.8.8.8", port=53, timeout=3):
+		try:
+			socket.setdefaulttimeout(timeout)
+			socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+			return True
+		except Exception as ex:
+			print(ex.message)
+			return False
 
 	def getSession(self, api_key, cert_path, key_path):
 		session = requests.Session()
