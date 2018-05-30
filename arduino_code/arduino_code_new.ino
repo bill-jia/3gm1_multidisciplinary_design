@@ -1,5 +1,5 @@
 #include <QList.h>
-
+#define DATA_POINTS 200
 
 //Digital outputs
 
@@ -7,7 +7,7 @@ int A1A = 6;            //for control of motor A
 int A1B = 5;    
 int B1A = 10;           //for control of motor B
 int B1B = 9;
-
+int LED = 7;
 
 //Analogue sensors
 
@@ -20,40 +20,30 @@ int B1B = 9;
 
 //CONSTANTS
 
-int samples = 5;
-float kinematicsSampleTimeLength = 0.1; //seconds
-float kinematicsSampleInterval = 20; //millisecond
-int kinematicsSampleNumber;
+int samples = 2;
 float e = 2.71828;
 float pi = 3.14159;
-float pot_calibrate = 1.0;  //calibration constant to convert voltage across pot into angular displacement
-int tension_read, tension_avg, pot_read, pot_avg;  //variables required to perform smoothing
-byte data_points = 50;
-byte present = data_points - 1;
-byte previous = data_points - 2;
-int timeIntervalMillis;
-byte count;
-String str = "";
-String Tstr, Dstr, str1, str2;
-//to delete
-int time_increment = 1;
-int state = -1;
+float pot_calibrate = 0.7;  //calibration constant to convert voltage across pot into displacement
+float tension_calibrate = 0.4;  
+int tension_avg, pot_avg, tension_single, displacement_single;  //variables required to perform smoothing
+int store = 0;
+int count = 0;
+String Tstr, Dstr;
+int state = 2;  //need to start of as -1 but here as 1 for testing 
+int start = 1;
+int Kp;
 
 //Parameters
 
-double k1 = 100;           //for the stomach sphincter
-float mean1 = 400;      //set the gaussian centres without calibration for now #########
-float variance1 = 100;
-double k2 = 200;           //for the mouth sphincter
-float mean2 = 900;
-float variance2 = 100;
-
+int oes_length, baseline_force;
+int k1, mean1, variance1;   //stomach sphincter
+int k2, mean2, variance2;   //mouth sphincter or gag reflex
+int k3, mean3, variance3;   //extra spasm (if needed)
 
 // VARIABLES
-float k_p, k_i, k_d, pot;
-QList<int> potSampled, tensionSampled, tension, timer; //so that we can take a time average of the readings in order to remove noise
-QList<float> displacement;
-byte force;
+QList<int> potSampled, tensionSampled; //so that we can take a time average of the readings in order to remove noise
+int tension[DATA_POINTS], displacement[DATA_POINTS], time_increment[DATA_POINTS], timer[2], pot, k_p, k_i, k_d; 
+byte force;    //integer representation of displacement, just divide by 10 to get real displacement from cm to mm 
 int maxDisplacement, timeoutSec;
 
 
@@ -80,21 +70,22 @@ int getTensometer() {
 
 void readSensors() {
   pot = getPotentiometer();     
-  tension.pop_front();                //the index [samples - 1] gives the most recent addition to the stack
-  tension.push_back(getTensometer());
+  tension_single = getTensometer();   //the index [samples - 1] gives the most recent addition to the stack
 }
 
+void store_data() {
+  tension[count - 1] = tension_single;
+  displacement[count - 1] = displacement_single;
+}
 
 //Timers 
 
 void timerStart() {       //starts the clock
-  timer.pop_front();
-  timer.push_back(millis());
+  timer[0] = millis();
 }
 
 int timerStop() {        //stops the clock and returns the time elapsed since timerStart()
-  timer.pop_front();
-  timer.push_back(millis());
+  timer[1] = millis();
   return timer[1]-timer[0];
 }
 
@@ -102,8 +93,9 @@ int timerStop() {        //stops the clock and returns the time elapsed since ti
 
 String displacement_array_to_string() {
   String str = "";
-  for (int i = 0; i < data_points; i++) {
-    int j = (int)(displacement[i]);
+  int j = 0;
+  for (int i = 0; i < DATA_POINTS; i++) {
+    j = displacement[i];
     str += String(j) + " ";
   }
   return str;
@@ -111,17 +103,30 @@ String displacement_array_to_string() {
 
 String tension_array_to_string() {
   String str = "";
-  for (int i = 0; i < data_points; i++) {
-    int j = tension[i];
+  int j = 0;
+  for (int i = 0; i < DATA_POINTS; i++) {
+    j = tension[i];
     str += String(j) + " ";
   }
   return str;
 }
 
-void send_Data(QList<int> T, QList<float> D) {
+String time_increment_array_to_string() {
+  String str = "";
+  int j = 0;
+  for (int i = 0; i < DATA_POINTS; i++) {
+    j = time_increment[i];
+    str += String(j) + " ";
+  }
+  return str;
+}
+
+void send_data() {
   Serial.println("Sending Data");
-  //Tstr = int_array_to_string(T);
-  //Dstr = float_array_to_string(D);
+  Serial.println("dt: " + time_increment_array_to_string() + " , ");
+  Serial.println("d: " + displacement_array_to_string() + " , ");
+  Serial.println("t: " + tension_array_to_string());
+  Serial.print("\n");
 }
 
 // ACTUATORS
@@ -133,42 +138,80 @@ void stopMotor() {
 }
 
 void brake(byte force) {    //force must be from 0-255
-  analogWrite(A1A, force);
-  analogWrite(A1B, 0);
+  analogWrite(A1A, 0);
+  analogWrite(A1B, force);
   analogWrite(B1A, force);
   analogWrite(B1B, 0);
 }
 
+void calculateDisplacement() {
+  pot = pot - 350;
+  float pot_ = pot;
+  float dis = pot * pot_calibrate;
+  int displace = dis;
+  displacement_single = displace; //pot will give a reading from approx 350-1023 and displacement should be from 0-400mm ie pot_calibrate = 400/(1023-350)
+}
+
 void retract() {
-  analogWrite(A1A, 100);    //need to make it retract until back to the baseline
-  analogWrite(A1B, 0);
-  analogWrite(B1A, 100);
-  analogWrite(B1B, 0);
+  while (displacement_single > 10) {   //no need for feedback because the electrical system stores the displacement 
+    readSensors();
+    calculateDisplacement();
+    analogWrite(A1A, 0);    //need to make it retract until back to the baseline
+    analogWrite(A1B, 100);
+    analogWrite(B1A, 100);
+    analogWrite(B1B, 0);  
+  }
+  //Serial.print(displacement_single); // for testing
 }
 
 
 // CALCULATE PHYSICS
 
-void calculateDisplacement() {
-  displacement.push_back(pot*pot_calibrate);
-  displacement.pop_front();
-}
-
 float gaussian(float x, float mean, float variance) {
   return pow(e, (-1*sq(x-mean))/(2*variance));
 }
 
-float modelForce(float d) {
-  return k1*gaussian(d, mean1, variance1) + k2*gaussian(d, mean2, variance2) + 50;
+int modelForce() {    //returns the force that should be applied at that displacement
+  float D = displacement_single;
+  float force = k1*gaussian(D, mean1, variance1) + k2*gaussian(D, mean2, variance2) + k3*gaussian(D, mean3, variance3) + baseline_force;
+  byte Force = force; 
+  return Force;  
 }
 
-void controller(float d){   //open loop for now
-  force = modelForce(d);
+void controller() {
+  float float_tension = tension_single;
+  if (float_tension > 635.0) {    //saturation
+    float_tension = 635.0;
+  } 
+  float actualForce = float_tension * tension_calibrate; //changes the tension reading from a 0-634 value to a 0-255 force byte (need to set the calibration parameter)
+  byte actual_force = actualForce; //conversion of float to int 0-255
+  byte error = modelForce() - actual_force;
+  //Serial.println(error);
+  force = modelForce() + error * Kp;
+  if (force > 255) {  //saturation
+    force = 255;
+  }
   brake(force);
+  if (displacement_single > 400) {  //when the cytosponge comes out of the throat
+    store = 2;
+    count = DATA_POINTS;
+    stopMotor();
+  }
 }
 
 void resetVariables() {
-  //TBD
+  force = 0; 
+  pot = 0;
+  count = 0;
+  timer[0] = 0;
+  timer[1] = 0;
+  start = 1;
+
+  for (int i = 0; i < DATA_POINTS; i++){   //for force control
+    displacement[i] = 0;
+    tension[i] = 0;     
+    time_increment[i] = 0; 
+  }
 }
 
 void setup() {
@@ -178,81 +221,142 @@ void setup() {
   pinMode(A1B, OUTPUT);
   pinMode(B1A, OUTPUT);
   pinMode(B1B, OUTPUT);
+  pinMode(LED, OUTPUT);
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
+  
   pot = 0;
   count = 0;
   force = 0;
+  store = 0;
+  start = 1;
+  
   for (int i = 0; i < samples; i++){   //creating the stacks of size samples
     potSampled.push_back(0);
     tensionSampled.push_back(0);
   }
   for (int i = 0; i < 2; i++){
-    timer.push_back(0); 
+    timer[i] = 0; 
   }
-  for (int i = 0; i < data_points; i++){   //for force control
-    displacement.push_back(0);
-    tension.push_back(0);     
+  for (int i = 0; i < DATA_POINTS; i++){   //for force control
+    displacement[i] = 0;
+    tension[i] = 0;     
+    time_increment[i] = 0;
   }
-  
-      for (int i = 0; i < data_points; i++) {
-        tension.pop_front();
-        tension.push_back(i);
-      } 
-      for (int i = 0; i < data_points; i++) {
-        displacement.pop_front();
-        displacement.push_back(i*1.0);
-      }
-  
-  //attachInterrupt(digitalPinToInterrupt(encoderIn1), recordEncoder, RISING);//we dont need this for a pot right?
-  //Serial.println("Program start");
-}
+  //Serial.println("Program start"); //need to comment this out when using serial with pi
+} 
 
 void loop() {
   // put your main code here, to run repeatedly:
   //Stuff in main loop not permanent for now
-  
-  if (Serial.available() > 0) {
+
+  if (Serial.available() > 0) {   //start up by sending case {2, 3, 4} and then start (1)
     state = Serial.parseInt();
     if (state == -1) {
       stopMotor();
+      send_data();
+      start = 1;
+    }
+    else if (state == 1){
+      //oesphageal length? oes_length = Serial.parseInt();
+      Serial.print("Program Starting"); //sending back an ack
+      digitalWrite(LED, HIGH);
+      delay (500);
+      digitalWrite(LED, LOW);
+      delay (500);                      
+      digitalWrite(LED, HIGH);
+      delay (500);
+      digitalWrite(LED, LOW);
+      delay (500);
+      digitalWrite(LED, HIGH);
+      delay (500);
+      digitalWrite(LED, LOW);       
+    }
+  else if (state == 2) {
+      //case for patient 1: healthy
+      oes_length = 400;
+      baseline_force = 30;
+      k1 = 500;
+      mean1 = 50; 
+      variance1 = 100;
+      k2 = 1000;
+      mean2 = 350;
+      variance2 = 100;
+      k3 = 0;
+      mean3 = 0;
+      variance3 = 0;       
+    }
+    else if (state == 3) {
+      //case for patient 2: spasms?
+      oes_length = 400;
+      baseline_force = 80;
+      k1 = 500;
+      mean1 = 50;
+      variance1 = 100; 
+      k2 = 250;
+      mean2 = 200;
+      variance2 = 200;
+      k3 = 1000;
+      mean3 = 350;
+      variance3 = 100;      
+    }
+    else if (state == 4) {
+      //case for patient 3: short patient?
+      oes_length = 300;
+      baseline_force = 30;
+      k1 = 500;
+      mean1 = 50;
+      variance1 = 100; 
+      k2 = 1000;
+      mean2 = 250;
+      variance2 = 100;
+      k3 = 0; 
+      mean3 = 0;
+      variance3 = 0;  
+    }
+    else if (state == -2) {
+      retract();
+    }
+    else {
+        Serial.print("Error");
+      }
+  }
 
-  //Serial.print(tension.size());
-      Serial.print("dt: " + String(time_increment) + " , ");
-      Serial.print("d: " + displacement_array_to_string() + " , ");
-      Serial.print("t: " + tension_array_to_string());
-      Serial.print("\n");  
+//  if (state == 2) {
+//    //case for patient 1: healthy
+//    oes_length = 400;
+//    baseline_force = 50;
+//    k1 = 500;
+//    mean1 = 50; 
+//    variance1 = 100;
+//    k2 = 1000;
+//    mean2 = 350;
+//    variance2 = 100;
+//    k3 = 0;
+//    mean3 = 0;
+//    variance3 = 0;     
+//    state = 1;  
+//  }
+
+  else if (state == 1) {
+  store++;
+  readSensors();
+  calculateDisplacement();
+  controller();         
+  delay(50);
+  if (store > 2) {    //this stores every other displacement reading to allow for better control (smaller delay) without cutting the total run time
+    time_increment[count] = timerStop();
+    count++;
+    store_data();
+    store = 0;
+    timerStart();
+  }
+  if (count > DATA_POINTS - 1) {
+    state = -1;
+    send_data();
+    resetVariables();
     }
   }
-  if (state == 1) {
-    brake(400.0);
-  }
-  
-
-  
-  
-
-  
-  //delay (2000);
-
-  /*
-  timerStart();
-  readSensors();
-  delay(50);
-  timeIntervalMillis = timerStop();
-  calculateDisplacement();
-  count++;
-  Serial.println(count);
-  if (count > data_points) {
-    count = 0;
-    send_Data(tension, displacement);
-    //Serial.print(float_array_to_string(displacement));
-    
-  }
-  
-  //Serial.println(displacement[present]);
-  //controller(displacement[present]);
-  */
 }
 
 
