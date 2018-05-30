@@ -13,7 +13,7 @@ class CommandService:
 		return startSignal
 
 	def getEndSignal(self):
-		return -1
+		return str(-1)
 
 	def getRetractSignal(self):
-		return -2
+		return str(-2)

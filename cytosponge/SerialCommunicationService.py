@@ -53,7 +53,10 @@ class SerialCommunicationService:
 		# Required because this should only post if exited through a ti
 		if event is None or event.isSet():
 			self.EventService.postTrainingFinished()
-
+		if event is None:
+			self.logger.debug("Timeout serial thread terminated")
+		else:
+			self.logger.debug("Event serial thread terminated")
 	def getIncomingData(self):
 		return self.incomingData.get()
 
