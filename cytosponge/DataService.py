@@ -30,7 +30,8 @@ class DataService:
 		self.tensionGraph = io.BytesIO()
 		self.velocityGraphUpload = io.BytesIO()
 		self.tensionGraphUpload = io.BytesIO()
-		self.currentUser = 8
+		self.currentUserRecordID = ""
+		self.currentUser = None
 
 		self.tension = [5, 5, 5, 5, 5]
 		self.acceleration = []
@@ -42,6 +43,17 @@ class DataService:
 		self.testCase = "Normal" # Normal, Seize, or Panic
 		self.score = 0
 		self.feedback = ""
+
+	def login(self, recordID):
+		resp = self.HTTPService.searchRecord("IdNumber")
+		if resp["RecordSearchResult"] is not None and len(resp["RecordSearchResult"]["records"]) == 1:
+			self.currentUser = resp["RecordSearchResult"]["records"][0]["id"]
+			self.currentUserRecordID = recordID
+			self.logger.debug("Login Successful")
+			return True
+		else:
+			self.logger.debug("Login failed")
+			return False
 
 	def updateParameters(self, oesophagusLength, testCase):
 		if self.manualParameterControl:

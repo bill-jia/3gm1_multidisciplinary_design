@@ -60,34 +60,53 @@ class CytospongePanel(wx.Panel):
 
 		# Create sizers for layout
 		self.mainSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.sidebarSizer = wx.BoxSizer(wx.VERTICAL)
 		self.controlSizer = wx.StaticBoxSizer(wx.VERTICAL,self,label="Controls")
+		self.loginSizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Login")
 		self.startStopSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.graphDisplaySizer = wx.BoxSizer(wx.HORIZONTAL)
 
+		# Login Widgets
+		self.loggedIn = False
+		self.IDField = wx.TextCtrl(self, value=self.DataService.currentUserRecordID)
+		self.loginButton = wx.Button(self, label="Set User")
+		self.Bind(wx.EVT_BUTTON, self.OnClickLogin, self.loginButton)
 
-		# Start and stop buttons
+		self.loginSizer.Add(self.IDField, 0, wx.ALIGN_LEFT|wx.ALL, 10)
+		self.loginSizer.Add(self.loginButton, 0, wx.ALIGN_RIGHT|wx.ALL, 10)
+
+		# Control Widgets
 		self.startButton = wx.Button(self, label="Start")
 		self.stopButton = wx.Button(self, label="Stop")
-		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
-		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)
-
-		# Add controls
 		self.manualParameterControl = wx.CheckBox(self, label= "Set Parameters")
 		self.oesophagusLengthControl = wx.Slider(self, value=self.DataService.oesophagusLength, minValue=10, maxValue=50, style = wx.SL_LABELS)
 		self.testCaseSelection = wx.ComboBox(self, value=self.DataService.testCase, choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
+
+		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
+		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)		
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckParams, self.manualParameterControl)
 		self.Bind(wx.EVT_SCROLL_CHANGED, self.OnOLSlide, self.oesophagusLengthControl)
 		self.Bind(wx.EVT_COMBOBOX, self.OnSelectTest, self.testCaseSelection)
+		# Manual Control disabled by default
 		self.oesophagusLengthControl.Disable()
 		self.testCaseSelection.Disable()
-		# Flags to indicate whether parameter update is necessary before starting a test
-		# Set up plot area
 
-		# Test Image
+		# Relative Layout of controls
+		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
+		staticBox1 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Oesophagus Length (cm)")
+		staticBox2 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Test Case")
+		staticBox1.Add(self.oesophagusLengthControl, 1, wx.CENTER|wx.EXPAND|wx.FIXED_MINSIZE, 10)
+		staticBox2.Add(self.testCaseSelection, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER|wx.EXPAND, 10)
+		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+		self.controlSizer.Add(staticBox1, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+		self.controlSizer.Add(staticBox2, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
+
+		# Initialize plot bitmap placeholders
 		self.graphDisplay = wx.StaticBitmap(self, id=-1, size=(CytospongePanel.initialBMPX,CytospongePanel.initialBMPY))
 		self.graphsReady = False
 
-		# Initialize plot bitmap placeholders
 		self.graphs = [wx.Bitmap(), wx.Bitmap()] # 0 is velocity, 1 is tension
 		self.currGraph = 0
 		self.prevButton = wx.Button(self, label="Prev")
@@ -95,6 +114,7 @@ class CytospongePanel(wx.Panel):
 		self.Bind(wx.EVT_BUTTON, self.ToggleGraph, self.prevButton)
 		self.Bind(wx.EVT_BUTTON, self.ToggleGraph, self.nextButton)
 		
+		# Place graph display widgets
 		self.graphDisplaySizer.Add(self.prevButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.graphDisplaySizer.Add(self.graphDisplay, 1, wx.EXPAND|wx.ALL, 10)
 		self.graphDisplaySizer.Add(self.nextButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
@@ -106,19 +126,19 @@ class CytospongePanel(wx.Panel):
 
 
 		# Map layout
-		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
-		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
-		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
-		staticBox1 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Oesophagus Length (cm)")
-		staticBox2 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Test Case")
-		staticBox1.Add(self.oesophagusLengthControl, 1, wx.CENTER|wx.EXPAND|wx.FIXED_MINSIZE, 10)
-		staticBox2.Add(self.testCaseSelection, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER|wx.EXPAND, 10)
-		self.controlSizer.Add(self.manualParameterControl, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
-		self.controlSizer.Add(staticBox1, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
-		self.controlSizer.Add(staticBox2, 0, wx.CENTER|wx.ALL|wx.EXPAND, 10)
-		self.mainSizer.Add(self.controlSizer, 0, wx.ALIGN_TOP|wx.ALL|wx.FIXED_MINSIZE, 10)
+		self.sidebarSizer.Add(self.loginSizer, 0, wx.ALIGN_TOP|wx.ALL|wx.FIXED_MINSIZE, 10)
+		self.sidebarSizer.Add(self.controlSizer, 0, wx.ALIGN_TOP|wx.ALL|wx.FIXED_MINSIZE, 10)
+		self.mainSizer.Add(self.sidebarSizer, 0, wx.ALIGN_TOP|wx.ALL|wx.FIXED_MINSIZE, 10)
 		self.mainSizer.Add(self.graphDisplaySizer, 0, wx.ALIGN_TOP|wx.ALL, 10)
 		self.SetSizer(self.mainSizer)
+
+	def OnClickLogin(self, event):
+		recordID = self.IDField.GetLineText()
+		if recordID is not None and recordID != "" and recordID != self.DataService.currentUserRecordID:
+			self.loggedIn = self.DataService.login(recordID)
+		if recordID == "" or not self.loggedIn:
+			self.logger.debug("Login attempt with invalid ID. Signup prompted")
+
 
 	def OnClickStart(self, event):
 		if not self.EventService.receivingData.isSet():
@@ -148,8 +168,9 @@ class CytospongePanel(wx.Panel):
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
 		self.DataService.analyzeData(self.serialCommsService.getIncomingData())
-		uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
-		uploadThread.start()
+		if self.loggedIn:
+			uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
+			uploadThread.start()
 		self.loadGraphImages()
 		self.displayGraphs()
 
@@ -197,6 +218,7 @@ class CytospongePanel(wx.Panel):
 
 	def ResizeGraph(self, event):
 		event.Skip()
+		print(self.parent.GetSize())
 		if self.graphsReady:
 			newPanelX, newPanelY = self.parent.GetSize()
 			newBMPX = CytospongePanel.initialBMPX + (newPanelX-CytospongePanel.initialPanelX)
@@ -218,7 +240,7 @@ class CytospongeApp(wx.Frame):
 
 		# Initialize superclass
 		super(CytospongeApp, self).__init__(*args, **kw)
-		self.SetMinSize((265,400))
+		self.SetMinSize((265,485))
 		#Create a panel
 		self.panel = CytospongePanel(self, COMport)
 
