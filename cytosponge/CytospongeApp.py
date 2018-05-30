@@ -154,6 +154,8 @@ class CytospongePanel(wx.Panel):
 	def OnClickStart(self, event):
 		if not self.EventService.receivingData.isSet():
 			self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
+			self.testCaseSelection.SetValue(self.DataService.testCase)
+			self.oesophagusLengthControl.SetValue(self.DataService.oesophagusLength)
 			self.logger.info("Test started with parameters: OL - " + str(self.DataService.oesophagusLength) + ", TC - " + str(self.DataService.testCase))
 			# # ACTUAL CODE
 			self.serialCommsService.writeData(self.CommandService.getStartSignal())
