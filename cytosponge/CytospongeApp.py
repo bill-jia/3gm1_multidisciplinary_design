@@ -10,7 +10,7 @@ class CytospongePanel(wx.Panel):
 	initialBMPX = 600
 	initialBMPY = 400
 	initialPanelX = 1150
-	initialPanelY = 510
+	initialPanelY = 550
 	def __init__(self, parent, COMport):
 		wx.Panel.__init__(self, parent)
 		self.parent = parent
@@ -45,14 +45,14 @@ class CytospongePanel(wx.Panel):
 
 		# Initialize data analysis and manipulation
 		try:
-			self.DataService = cytosponge.DataService()
+			self.DataService = cytosponge.DataService(self)
 			self.logger.info("Data service initialized")
 		except Exception as e:
 			self.logger.error(cytosponge.format_error_message(e))
 			sys.exit()
 
 		try:
-			self.CommandService = cytosponge.CommandService()
+			self.CommandService = cytosponge.CommandService(self)
 			self.logger.info("Command service initialized")
 		except Exception as e:
 			self.logger.error(cytosponge.format_error_message(e))
@@ -62,6 +62,7 @@ class CytospongePanel(wx.Panel):
 		self.mainSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.sidebarSizer = wx.BoxSizer(wx.VERTICAL)
 		self.controlSizer = wx.StaticBoxSizer(wx.VERTICAL,self,label="Controls")
+		self.retractSizer = wx.StaticBoxSizer(wx.HORIZONTAL,self,label="Retract String")
 		self.loginSizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Login")
 		self.startStopSizer = wx.BoxSizer(wx.HORIZONTAL)
 		self.graphDisplaySizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -78,23 +79,28 @@ class CytospongePanel(wx.Panel):
 		# Control Widgets
 		self.startButton = wx.Button(self, label="Start")
 		self.stopButton = wx.Button(self, label="Stop")
+		self.retractButton = wx.Button(self,label="Retract")
 		self.manualParameterControl = wx.CheckBox(self, label= "Set Parameters")
 		self.oesophagusLengthControl = wx.Slider(self, value=self.DataService.oesophagusLength, minValue=10, maxValue=50, style = wx.SL_LABELS)
-		self.testCaseSelection = wx.ComboBox(self, value=self.DataService.testCase, choices = ["Normal", "Seizing", "Panic"], style=wx.CB_READONLY)
+		self.testCaseSelection = wx.ComboBox(self, value=self.DataService.testCase, choices = cytosponge.DataService.testCaseMatrix, style=wx.CB_READONLY)
 
 		self.Bind(wx.EVT_BUTTON, self.OnClickStart, self.startButton)
-		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)		
+		self.Bind(wx.EVT_BUTTON, self.OnClickStop, self.stopButton)	
+		self.Bind(wx.EVT_BUTTON, self.OnClickRetract, self.retractButton)
 		self.Bind(wx.EVT_CHECKBOX, self.OnCheckParams, self.manualParameterControl)
 		self.Bind(wx.EVT_SCROLL_CHANGED, self.OnOLSlide, self.oesophagusLengthControl)
 		self.Bind(wx.EVT_COMBOBOX, self.OnSelectTest, self.testCaseSelection)
 		# Manual Control disabled by default
+		self.retractButton.Disable()
 		self.oesophagusLengthControl.Disable()
 		self.testCaseSelection.Disable()
 
 		# Relative Layout of controls
+		self.retractSizer.Add(self.retractButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.startStopSizer.Add(self.startButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.startStopSizer.Add(self.stopButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
 		self.controlSizer.Add(self.startStopSizer, 0, wx.ALIGN_TOP, 10)
+		self.controlSizer.Add(self.retractSizer, 0, wx.ALIGN_TOP|wx.CENTER, 10)
 		staticBox1 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Oesophagus Length (cm)")
 		staticBox2 = wx.StaticBoxSizer(wx.HORIZONTAL, self, label="Test Case")
 		staticBox1.Add(self.oesophagusLengthControl, 1, wx.CENTER|wx.EXPAND|wx.FIXED_MINSIZE, 10)
@@ -150,12 +156,13 @@ class CytospongePanel(wx.Panel):
 			self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
 			self.logger.info("Test started with parameters: OL - " + str(self.DataService.oesophagusLength) + ", TC - " + str(self.DataService.testCase))
 			# # ACTUAL CODE
-			# self.serialCommsService.writeData(CytospongeApp.startSignal)
+			# self.serialCommsService.writeData(self.CommandService.getStartSignal())
 			# self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
 			# self.EventService.setReceivingData()
 			# self.parent.SetStatusText("Training in progress")
 
 		#No arduino test code
+		print(self.CommandService.getStartSignal())
 		self.parent.SetStatusText("Training in progress")
 		t = threading.Timer(2.0, self.setTrainingFinished)
 		t.start()
@@ -163,17 +170,24 @@ class CytospongePanel(wx.Panel):
 
 	def OnClickStop(self, event):
 		if self.EventService.receivingData.isSet():
-			self.serialCommsService.writeData(CytospongeApp.endSignal)
+			self.retractButton.Enable()
+			self.serialCommsService.writeData(self.CommandService.getEndSignal())
 			self.logger.warn("Test stopped manually")
 			# Collect incomplete data
 			self.serialCommsService.collectEndData()
+
+	def OnClickRetract(self, event):
+		#self.serialCommsService.writeData(self.CommandService.getRetractSignal())
+		self.parent.SetStatusText(self.CommandService.getRetractSignal())
 
 	def OnTrainingFinished(self, event):
 		
 		#ACTUAL CODE
 		#self.serialCommsService.dataListeningThread.join()
+		self.retractButton.Enable()
 		self.parent.SetStatusText("Training finished")
 		# self.DataService.analyzeData(self.serialCommsService.getIncomingData())
+		
 		self.DataService.analyzeData()
 		if self.loggedIn:
 			uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
@@ -225,7 +239,7 @@ class CytospongePanel(wx.Panel):
 
 	def ResizeGraph(self, event):
 		event.Skip()
-		print(self.parent.GetSize())
+		# print(self.parent.GetSize())
 		if self.graphsReady:
 			newPanelX, newPanelY = self.parent.GetSize()
 			newBMPX = CytospongePanel.initialBMPX + (newPanelX-CytospongePanel.initialPanelX)
@@ -256,7 +270,7 @@ class CytospongeApp(wx.Frame):
 
 		# Initialize superclass
 		super(CytospongeApp, self).__init__(title="Cytosponge Training", *args, **kw)
-		self.SetMinSize((265,485))
+		self.SetMinSize((290,550))
 		#Create a panel
 		self.panel = CytospongePanel(self, COMport)
 
@@ -281,7 +295,7 @@ class CytospongeApp(wx.Frame):
 
 	def runApp(self):
 		self.Fit()
-		self.SetSize((265,400))
+		self.SetSize((290,550))
 		self.Show()
 		self.Bind(wx.EVT_SIZE, self.panel.ResizeGraph, self)
 		self.uiApp.MainLoop()

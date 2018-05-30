@@ -7,12 +7,12 @@ import logging
 
 class DataService:
 
-	testCaseMatrix = ["Normal", "Seizing", "Panic"]
+	testCaseMatrix = ["Normal", "Spasms", "Short"]
 
-	def __init__(self):
+	def __init__(self, parent):
 		# Initialize logging
 		self.logger = logging.getLogger("cytosponge_training.DataService")
-
+		self.parent = parent
 
 		#Initialize connection to L2S2
 		self.httpService = cytosponge.HTTPService()
