@@ -36,12 +36,12 @@ class CytospongePanel(wx.Panel):
 			sys.exit()
 
 		# Initialize serial communications service
-		# try:
-		# 	self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
-		# 	self.logger.info("Serial communications initialized")
-		# except Exception as e:
-		# 	self.logger.error(cytosponge.format_error_message(e))
-		# 	sys.exit()
+		try:
+			self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
+			self.logger.info("Serial communications initialized")
+		except Exception as e:
+			self.logger.error(cytosponge.format_error_message(e))
+			sys.exit()
 
 		# Initialize data analysis and manipulation
 		try:
@@ -156,16 +156,16 @@ class CytospongePanel(wx.Panel):
 			self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
 			self.logger.info("Test started with parameters: OL - " + str(self.DataService.oesophagusLength) + ", TC - " + str(self.DataService.testCase))
 			# # ACTUAL CODE
-			# self.serialCommsService.writeData(self.CommandService.getStartSignal())
-			# self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
-			# self.EventService.setReceivingData()
-			# self.parent.SetStatusText("Training in progress")
+			self.serialCommsService.writeData(self.CommandService.getStartSignal())
+			self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
+			self.EventService.setReceivingData()
+			self.parent.SetStatusText("Training in progress")
 
 		#No arduino test code
-		print(self.CommandService.getStartSignal())
-		self.parent.SetStatusText("Training in progress")
-		t = threading.Timer(2.0, self.setTrainingFinished)
-		t.start()
+		# print(self.CommandService.getStartSignal())
+		# self.parent.SetStatusText("Training in progress")
+		# t = threading.Timer(2.0, self.setTrainingFinished)
+		# t.start()
 
 
 	def OnClickStop(self, event):
@@ -177,16 +177,16 @@ class CytospongePanel(wx.Panel):
 			self.serialCommsService.collectEndData()
 
 	def OnClickRetract(self, event):
-		#self.serialCommsService.writeData(self.CommandService.getRetractSignal())
-		self.parent.SetStatusText(self.CommandService.getRetractSignal())
+		self.serialCommsService.writeData(self.CommandService.getRetractSignal())
+		self.parent.SetStatusText("String retracted")
 
 	def OnTrainingFinished(self, event):
 		
 		#ACTUAL CODE
-		#self.serialCommsService.dataListeningThread.join()
+		# self.serialCommsService.dataListeningThread.join()
 		self.retractButton.Enable()
 		self.parent.SetStatusText("Training finished")
-		# self.DataService.analyzeData(self.serialCommsService.getIncomingData())
+		self.DataService.analyzeData(self.serialCommsService.getIncomingData())
 		
 		self.DataService.analyzeData()
 		if self.loggedIn:
@@ -289,8 +289,8 @@ class CytospongeApp(wx.Frame):
 		self.runApp()
 
 	def terminateApp(self, event):
-		# self.panel.serialCommsService.writeData(CytospongeApp.endSignal)
-		# self.panel.logger.info("Program closed")
+		self.panel.serialCommsService.writeData(CytospongeApp.endSignal)
+		self.panel.logger.info("Program closed")
 		event.Skip()
 
 	def runApp(self):
