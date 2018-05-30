@@ -133,7 +133,7 @@ class CytospongePanel(wx.Panel):
 		self.SetSizer(self.mainSizer)
 
 	def OnClickLogin(self, event):
-		recordID = self.IDField.GetLineText()
+		recordID = self.IDField.GetLineText(0)
 		if recordID is not None and recordID != "" and recordID != self.DataService.currentUserRecordID:
 			self.loggedIn = self.DataService.login(recordID)
 		if recordID == "" or not self.loggedIn:

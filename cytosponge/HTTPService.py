@@ -52,7 +52,7 @@ class HTTPService:
 		#print(prepped.headers)
 		resp = self.session.send(prepped, timeout = HTTPService.timeout)
 		if resp.status_code == 404:
-			self.logger.warn("Request timed out at " + url + "\n" + "Headers: " + prepped.headers)
+			self.logger.warn("Request timed out at " + url + "\n" + "Headers: " + str(prepped.headers))
 			return {}
 		elif resp.status_code == 503:
 			self.logger.warn("L2S2 server not available")
@@ -63,7 +63,7 @@ class HTTPService:
 			self.logger.warn(HTTPService.printResponse(resp))
 		try:
 			self.serviceAvailable = True
-			self.logger.debug("HTTP Request to URL: " + url + "\n" + HTTPService.printResponse(resp))
+			self.logger.debug("HTTP Request to URL: " + url + " successful: " + str(resp.headers))
 			return resp.json()
 		except ValueError as e:
 			self.logger.warn(cytosponge.format_error_message(e))

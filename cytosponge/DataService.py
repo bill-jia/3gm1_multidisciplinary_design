@@ -45,8 +45,8 @@ class DataService:
 		self.feedback = ""
 
 	def login(self, recordID):
-		resp = self.HTTPService.searchRecord("IdNumber")
-		if resp["RecordSearchResult"] is not None and len(resp["RecordSearchResult"]["records"]) == 1:
+		resp = self.httpService.searchRecord("IdNumber", recordID)
+		if "records" in resp["RecordSearchResult"] and len(resp["RecordSearchResult"]["records"]) == 1:
 			self.currentUser = resp["RecordSearchResult"]["records"][0]["id"]
 			self.currentUserRecordID = recordID
 			self.logger.debug("Login Successful")
