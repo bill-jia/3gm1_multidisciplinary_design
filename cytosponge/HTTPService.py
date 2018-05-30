@@ -61,6 +61,7 @@ class HTTPService:
 		elif resp.status_code != 200:
 			self.logger.warn("Request to L2S2 server failed")
 			self.logger.warn(HTTPService.printResponse(resp))
+			return {}
 		try:
 			self.serviceAvailable = True
 			self.logger.debug("HTTP Request to URL: " + url + " successful: " + str(resp.headers))

@@ -46,7 +46,7 @@ class DataService:
 
 	def login(self, recordID):
 		resp = self.httpService.searchRecord("IdNumber", recordID)
-		if "records" in resp["RecordSearchResult"] and len(resp["RecordSearchResult"]["records"]) == 1:
+		if "RecordSearchResult" in resp and "records" in resp["RecordSearchResult"] and len(resp["RecordSearchResult"]["records"]) == 1:
 			self.currentUser = resp["RecordSearchResult"]["records"][0]["id"]
 			self.currentUserRecordID = recordID
 			self.logger.debug("Login Successful")
@@ -54,6 +54,17 @@ class DataService:
 		else:
 			self.logger.debug("Login failed")
 			return False
+
+	def signUp(self, firstName, surname, recordID):
+		resp = self.httpService.createRecord(firstName, surname, 6890486400, recordID)
+		if "RecordCreateResult" in resp and resp["RecordCreateResult"]["status"] == 0 and "record_id" in resp["RecordCreateResult"]:
+			self.currentUser = resp["RecordCreateResult"]["record_id"]
+			self.currentUserRecordID = recordID
+			self.logger.debug("Signup Successful")
+			return True
+		else:
+			self.logger.debug("Signup Failed")
+			return False		
 
 	def updateParameters(self, oesophagusLength, testCase):
 		if self.manualParameterControl:

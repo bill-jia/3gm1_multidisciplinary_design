@@ -138,6 +138,11 @@ class CytospongePanel(wx.Panel):
 			self.loggedIn = self.DataService.login(recordID)
 		if recordID == "" or not self.loggedIn:
 			self.logger.debug("Login attempt with invalid ID. Signup prompted")
+			popupWindow = SignUpWindow(self, recordID)
+			popupWindow.Show()
+		else:
+			self.parent.SetStatusText("Login Successful")
+			self.logger.debug("Login successful")
 
 
 	def OnClickStart(self, event):
@@ -229,6 +234,15 @@ class CytospongePanel(wx.Panel):
 			self.graphs[1] = wx.Bitmap(self.tensionIm.Rescale(newBMPX, newBMPY, quality=wx.IMAGE_QUALITY_HIGH))
 			self.graphDisplay.SetBitmap(self.graphs[self.currGraph])
 
+	def signUp(self, firstName, surname, idNumber):
+		signUpSuccessful = self.DataService.signUp(firstName, surname, idNumber)
+		if signUpSuccessful:
+			self.parent.SetStatusText("Signup successful!")
+			self.IDField.SetValue(self.DataService.currentUserRecordID)
+		else:
+			self.parent.SetStatusText("User signup failed!")
+		return signUpSuccessful
+
 class CytospongeApp(wx.Frame):
 
 	testSignal = "99"
@@ -241,7 +255,7 @@ class CytospongeApp(wx.Frame):
 		self.uiApp = wx.App(False)
 
 		# Initialize superclass
-		super(CytospongeApp, self).__init__(*args, **kw)
+		super(CytospongeApp, self).__init__(title="Cytosponge Training", *args, **kw)
 		self.SetMinSize((265,485))
 		#Create a panel
 		self.panel = CytospongePanel(self, COMport)
@@ -271,3 +285,85 @@ class CytospongeApp(wx.Frame):
 		self.Show()
 		self.Bind(wx.EVT_SIZE, self.panel.ResizeGraph, self)
 		self.uiApp.MainLoop()
+
+class SignUpWindow(wx.Frame):
+	def __init__(self, parent, recordID, *args, **kwargs):
+		super(SignUpWindow, self).__init__(parent, title="Signup User", *args, **kwargs)
+		self.panel = wx.Panel(self)
+		mainSizer = wx.BoxSizer(wx.VERTICAL)
+		buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.parent = parent
+
+		# First Dialog widgets
+		self.text = wx.StaticText(self.panel, -1, "User ID not valid. Create a new user profile?")
+		self.yesButton = wx.Button(self.panel, label="Yes")
+		self.noButton = wx.Button(self.panel, label="No")
+		self.Bind(wx.EVT_BUTTON, self.loadForm, self.yesButton)
+		self.Bind(wx.EVT_BUTTON, self.closeDialog, self.noButton)
+
+		#Form widgets
+		self.firstNameLabel = wx.StaticText(self.panel, label="First Name(s)")
+		self.firstNameCtrl = wx.TextCtrl(self.panel)
+		self.surnameLabel = wx.StaticText(self.panel, label="Surname")
+		self.surnameCtrl = wx.TextCtrl(self.panel)
+		self.IDLabel = wx.StaticText(self.panel, label="ID Number")
+		self.IDCtrl = wx.TextCtrl(self.panel, value=recordID)
+		self.confirmButton = wx.Button(self.panel, label="Confirm")
+		self.cancelButton = wx.Button(self.panel, label="Cancel")
+
+		for control in [self.firstNameLabel, self.firstNameCtrl, self.surnameLabel, self.surnameCtrl, self.IDLabel, self.IDCtrl, self.confirmButton, self.cancelButton]:
+			control.Show(False)
+		
+		buttonSizer.Add(self.yesButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		buttonSizer.Add(self.noButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		mainSizer.Add(self.text, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		mainSizer.Add(buttonSizer, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.panel.SetSizer(mainSizer)
+		self.SetSize(300,150)
+	
+	def loadForm(self, event):
+		self.text.Show(False)
+		self.yesButton.Show(False)
+		self.noButton.Show(False)
+		newMainSizer = wx.BoxSizer(wx.VERTICAL)
+		newButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
+		gridSizer = wx.FlexGridSizer(rows=3, cols=2, vgap=10, hgap=10)
+		
+		for control in [self.firstNameLabel, self.firstNameCtrl, self.surnameLabel, self.surnameCtrl, self.IDLabel, self.IDCtrl]:
+			gridSizer.Add(control, 0, wx.ALIGN_LEFT|wx.ALL, 10)
+			control.Show(True)
+		
+		newButtonSizer.Add(self.confirmButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		newButtonSizer.Add(self.cancelButton, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.confirmButton.Show(True)
+		self.cancelButton.Show(True)
+		self.Bind(wx.EVT_BUTTON, self.closeDialog, self.cancelButton)
+		self.Bind(wx.EVT_BUTTON, self.parentSignUp, self.confirmButton)
+
+
+		newMainSizer.Add(gridSizer, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		newMainSizer.Add(newButtonSizer, 0, wx.CENTER|wx.ALL|wx.ALIGN_CENTER, 10)
+		self.panel.SetSizer(newMainSizer)
+		self.CreateStatusBar()
+		self.SetStatusText("Enter user data")
+		self.SetSize(300,300)
+
+	def closeDialog(self, event):
+		self.Destroy()
+
+	def parentSignUp(self, event):
+		firstName = self.firstNameCtrl.GetLineText(0)
+		surname = self.surnameCtrl.GetLineText(0)
+		idNumber = self.IDCtrl.GetLineText(0)
+		
+		for field in [firstName, surname, idNumber]:
+			if field == '':
+				self.SetStatusText("Field Missing Value!")
+				return
+		signUpSuccessful = self.parent.signUp(firstName, surname, idNumber)
+		
+		if not signUpSuccessful:
+			self.SetStatusText("Signup failed!")
+			return
+
+		self.Destroy()
