@@ -36,12 +36,12 @@ class CytospongePanel(wx.Panel):
 			sys.exit()
 
 		# Initialize serial communications service
-		try:
-			self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
-			self.logger.info("Serial communications initialized")
-		except Exception as e:
-			self.logger.error(cytosponge.format_error_message(e))
-			sys.exit()
+		# try:
+		# 	self.serialCommsService = cytosponge.SerialCommunicationService(COMport, self.EventService)
+		# 	self.logger.info("Serial communications initialized")
+		# except Exception as e:
+		# 	self.logger.error(cytosponge.format_error_message(e))
+		# 	sys.exit()
 
 		# Initialize data analysis and manipulation
 		try:
@@ -144,15 +144,16 @@ class CytospongePanel(wx.Panel):
 		if not self.EventService.receivingData.isSet():
 			self.DataService.updateParameters(self.oesophagusLengthControl.GetValue(), self.testCaseSelection.GetValue())
 			self.logger.info("Test started with parameters: OL - " + str(self.DataService.oesophagusLength) + ", TC - " + str(self.DataService.testCase))
-			# ACTUAL CODE
-			self.serialCommsService.writeData(CytospongeApp.startSignal)
-			self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
-			self.EventService.setReceivingData()
-			self.parent.SetStatusText("Training in progress")
+			# # ACTUAL CODE
+			# self.serialCommsService.writeData(CytospongeApp.startSignal)
+			# self.serialCommsService.listenForDataOnEvent(self.EventService.receivingData)
+			# self.EventService.setReceivingData()
+			# self.parent.SetStatusText("Training in progress")
 
-		# No arduino test code
-		# t = threading.Timer(2.0, self.setTrainingFinished)
-		# t.start()
+		#No arduino test code
+		self.parent.SetStatusText("Training in progress")
+		t = threading.Timer(2.0, self.setTrainingFinished)
+		t.start()
 
 
 	def OnClickStop(self, event):
@@ -167,7 +168,8 @@ class CytospongePanel(wx.Panel):
 		#ACTUAL CODE
 		#self.serialCommsService.dataListeningThread.join()
 		self.parent.SetStatusText("Training finished")
-		self.DataService.analyzeData(self.serialCommsService.getIncomingData())
+		# self.DataService.analyzeData(self.serialCommsService.getIncomingData())
+		self.DataService.analyzeData()
 		if self.loggedIn:
 			uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
 			uploadThread.start()
@@ -259,8 +261,8 @@ class CytospongeApp(wx.Frame):
 		self.runApp()
 
 	def terminateApp(self, event):
-		self.panel.serialCommsService.writeData(CytospongeApp.endSignal)
-		self.panel.logger.info("Program closed")
+		# self.panel.serialCommsService.writeData(CytospongeApp.endSignal)
+		# self.panel.logger.info("Program closed")
 		event.Skip()
 
 	def runApp(self):

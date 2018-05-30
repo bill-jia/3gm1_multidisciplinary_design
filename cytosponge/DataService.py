@@ -82,7 +82,7 @@ class DataService:
 
 	def analyzeData(self, data={}):
 		#CODE WHEN SERIAL
-		self.parseData(data)
+		# self.parseData(data)
 		
 		### TBD
 		# Calculate lower and upper bounds for a particular model
