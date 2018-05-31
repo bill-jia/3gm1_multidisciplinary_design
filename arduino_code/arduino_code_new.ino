@@ -23,7 +23,7 @@ int LED = 7;
 int samples = 2;
 float e = 2.71828;
 float pi = 3.14159;
-float pot_calibrate = 0.7;  //calibration constant to convert voltage across pot into displacement
+float pot_calibrate = 0.695;  //calibration constant to convert voltage across pot into displacement
 float tension_calibrate = 0.4;  
 int tension_avg, pot_avg, tension_single, displacement_single;  //variables required to perform smoothing
 int store = 0;
@@ -69,8 +69,10 @@ int getTensometer() {
 }
 
 void readSensors() {
-  pot = getPotentiometer();     
+  pot = getPotentiometer();   
   tension_single = getTensometer();   //the index [samples - 1] gives the most recent addition to the stack
+  tension_single = tension_single - 450;
+  tension_single = tension_single * -1;
 }
 
 void store_data() {
@@ -145,22 +147,26 @@ void brake(byte force) {    //force must be from 0-255
 }
 
 void calculateDisplacement() {
-  pot = pot - 350;
+  pot = pot - 380 ; //removing bias 64 - 643
   float pot_ = pot;
   float dis = pot * pot_calibrate;
   int displace = dis;
-  displacement_single = displace; //pot will give a reading from approx 350-1023 and displacement should be from 0-400mm ie pot_calibrate = 400/(1023-350)
+  displacement_single = displace; //pot will give a reading from approx 64-643 and displacement should be from 0-400mm ie pot_calibrate = 400/(1023-350)
 }
 
 void retract() {
+  calculateDisplacement();
+  Serial.println(displacement_single);
   while (displacement_single > 10) {   //no need for feedback because the electrical system stores the displacement 
     readSensors();
     calculateDisplacement();
+    Serial.println(displacement_single);
     analogWrite(A1A, 0);    //need to make it retract until back to the baseline
-    analogWrite(A1B, force);
+    analogWrite(A1B, 150);
     analogWrite(B1A, 0);
-    analogWrite(B1B, force);  
+    analogWrite(B1B, 150);  
   }
+  stopMotor();
   //Serial.print(displacement_single); // for testing
 }
 
@@ -185,8 +191,9 @@ void controller() {
   } 
   float actualForce = float_tension * tension_calibrate; //changes the tension reading from a 0-634 value to a 0-255 force byte (need to set the calibration parameter)
   byte actual_force = actualForce; //conversion of float to int 0-255
-  byte error = modelForce() - actual_force;
-  //Serial.println(error);
+  byte error = modelForce() - actual_force; //160 = 500g. 226 = 1kg 292=1.5kg
+  Serial.print("Model Force: ");
+  Serial.println(modelForce());
   force = modelForce() + error * Kp;
   if (force > 255) {  //saturation
     force = 255;
@@ -244,135 +251,147 @@ void setup() {
     time_increment[i] = 0;
   }
   Serial.println("Program start"); //need to comment this out when using serial with pi
-  
-  brake(255);
-  delay(2000);
-  stopMotor();
-  Serial.println("Motor Stop");
 } 
 
 void loop() {
-   //brake(100);
   // put your main code here, to run repeatedly:
   //Stuff in main loop not permanent for now
-//
-//  if (Serial.available() > 0) {   //start up by sending case {2, 3, 4} and then start (1)
-//    int newState = Serial.parseInt();
-//    if (newState == -1) {
-//      stopMotor();
-//      send_data();
-//      start = 1;
-//    }
-//    else if (newState == 1){
-//      //oesphageal length? oes_length = Serial.parseInt();
-//      if (state == 2 || state == 3 || state == 4) { 
-//        state = newState;
-//        Serial.print("Program Starting"); //sending back an ack
-//        digitalWrite(LED, HIGH);
-//        delay (500);
-//        digitalWrite(LED, LOW);
-//        delay (500);                      
-//        digitalWrite(LED, HIGH);
-//        delay (500);
-//        digitalWrite(LED, LOW);
-//        delay (500);
-//        digitalWrite(LED, HIGH);
-//        delay (500);
-//        digitalWrite(LED, LOW);
-//      }       
-//    }
-//  else if (newState == 2) {
-//      //case for patient 1: healthy
-//      state = newState;
-//      oes_length = 400;
-//      baseline_force = 30;
-//      k1 = 500;
-//      mean1 = 50; 
-//      variance1 = 100;
-//      k2 = 1000;
-//      mean2 = 350;
-//      variance2 = 100;
-//      k3 = 0;
-//      mean3 = 0;
-//      variance3 = 0;       
-//    }
-//    else if (newState == 3) {
-//      //case for patient 2: spasms?
-//      state = newState;
-//      oes_length = 400;
-//      baseline_force = 80;
-//      k1 = 500;
-//      mean1 = 50;
-//      variance1 = 100; 
-//      k2 = 250;
-//      mean2 = 200;
-//      variance2 = 200;
-//      k3 = 1000;
-//      mean3 = 350;
-//      variance3 = 100;      
-//    }
-//    else if (newState == 4) {
-//      //case for patient 3: short patient?
-//      state = newState;
-//      oes_length = 300;
-//      baseline_force = 30;
-//      k1 = 500;
-//      mean1 = 50;
-//      variance1 = 100; 
-//      k2 = 1000;
-//      mean2 = 250;
-//      variance2 = 100;
-//      k3 = 0; 
-//      mean3 = 0;
-//      variance3 = 0;  
-//    }
-//    else if (newState == -2) {
-//      state = newState;
-//      retract();
-//    }
-//    else {
-//        Serial.print("Error");
-//      }
-//  }
-//
-////  if (state == 2) {
-////    //case for patient 1: healthy
-////    oes_length = 400;
-////    baseline_force = 50;
-////    k1 = 500;
-////    mean1 = 50; 
-////    variance1 = 100;
-////    k2 = 1000;
-////    mean2 = 350;
-////    variance2 = 100;
-////    k3 = 0;
-////    mean3 = 0;
-////    variance3 = 0;     
-////    state = 1;  
-////  }
-//
-//  else if (state == 1) {
-//  if (start==1) {
-//    timerStart();
-//  }
-//  store++;
 //  readSensors();
+//  Serial.print("pot: ");
+//  Serial.println(pot); 
+//  
 //  calculateDisplacement();
-//  controller();         
-//  delay(50);
-//  if (store > 2) {    //this stores every other displacement reading to allow for better control (smaller delay) without cutting the total run time
-//    time_increment[count] = timerStop();
-//    count++;
-//    store_data();
-//    store = 0;
-//    timerStart();
+//  controller();
+//   
+//  Serial.print("displacement: ");
+//  Serial.println(displacement_single);
+//  Serial.print("model force: ");
+//  Serial.println(modelForce());
+//  Serial.print("load cell (inverted): ");
+//  Serial.println(tension_single);
+//  Serial.println("--");
+//  delay(100);
+
+  if (Serial.available() > 0) {   //start up by sending case {2, 3, 4} and then start (1)
+    int newState = Serial.parseInt();
+    if (newState == -1) {
+      stopMotor();
+      send_data();
+      start = 1;
+    }
+    else if (newState == 1){
+      //oesphageal length? oes_length = Serial.parseInt();
+      if (state == 2 || state == 3 || state == 4) { 
+        state = newState;
+        Serial.print("Program Starting"); //sending back an ack
+        digitalWrite(LED, HIGH);
+        delay (500);
+        digitalWrite(LED, LOW);
+        delay (500);                      
+        digitalWrite(LED, HIGH);
+        delay (500);
+        digitalWrite(LED, LOW);
+        delay (500);
+        digitalWrite(LED, HIGH);
+        delay (500);
+        digitalWrite(LED, LOW);
+      }       
+    }
+  else if (newState == 2) {
+      //case for patient 1: healthy
+      state = newState;
+      oes_length = 400;
+      baseline_force = 150;
+      k1 = 1000;
+      mean1 = 50; 
+      variance1 = 200;
+      k2 = 2000;
+      mean2 = 350;
+      variance2 = 200;
+      k3 = 0;
+      mean3 = 0;
+      variance3 = 0;       
+    }
+    else if (newState == 3) {
+      //case for patient 2: spasms?
+      state = newState;
+      oes_length = 400;
+      baseline_force = 150;
+      k1 = 1000;
+      mean1 = 50;
+      variance1 = 200; 
+      k2 = 250;
+      mean2 = 200;
+      variance2 = 300;
+      k3 = 1000;
+      mean3 = 350;
+      variance3 = 200;      
+    }
+    else if (newState == 4) {
+      //case for patient 3: short patient?
+      state = newState;
+      oes_length = 300;
+      baseline_force = 30;
+      k1 = 500;
+      mean1 = 50;
+      variance1 = 200; 
+      k2 = 1000;
+      mean2 = 250;
+      variance2 = 200;
+      k3 = 0; 
+      mean3 = 0;
+      variance3 = 0;  
+    }
+    else if (newState == -2) {
+      state = newState;
+      retract();
+    }
+    else {
+        Serial.print("Error");
+        Serial.print(state);
+      }
+  }
+
+//  if (state == 2) {
+//    //case for patient 1: healthy
+//    oes_length = 400;
+//    baseline_force = 50;
+//    k1 = 500;
+//    mean1 = 50; 
+//    variance1 = 100;
+//    k2 = 1000;
+//    mean2 = 350;
+//    variance2 = 100;
+//    k3 = 0;
+//    mean3 = 0;
+//    variance3 = 0;     
+//    state = 1;  
 //  }
-//  if (count > DATA_POINTS - 1) {
-//    state = -1;
-//    send_data();
-//    resetVariables();
-//    }
-//  }
+
+  else if (state == 1) {
+  if (start==1) {
+    timerStart();
+    start = 0;
+  }
+  store++;
+  readSensors();
+  calculateDisplacement();
+  controller();         
+  delay(50);
+  if (store > 2) {    //this stores every other displacement reading to allow for better control (smaller delay) without cutting the total run time
+    time_increment[count] = timerStop();
+    count++;
+    store_data();
+    store = 0;
+    timerStart();
+  }
+  if (count > DATA_POINTS - 1) {
+    state = -1;
+    start = 1;
+    send_data();
+    resetVariables();
+    }
+  }
 }
 
 
