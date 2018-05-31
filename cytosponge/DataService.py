@@ -79,21 +79,22 @@ class DataService:
 			self.testCase = DataService.testCaseMatrix[np.random.randint(3)]
 
 	def parseData(self, data):
-		arrays = data.split(" , ")
-		raw_time = arrays[0].split(" ")
-		raw_displacement = arrays[1].split(" ")
-		raw_force = arrays[2].split(" ")
+		if len(data) > 0:
+			arrays = data.split(" , ")
+			raw_time = arrays[0].split(" ")
+			raw_displacement = arrays[1].split(" ")
+			raw_force = arrays[2].split(" ")
 
-		self.time_increment = float(raw_time[1])
-		self.time = [i*self.time_increment for i in range(0, (len(raw_displacement)-2))]
-		self.displacement = [float(i) for i in raw_displacement[1:-1]]
-		self.velocity = DataService.differentiate(self.displacement, self.time_increment)
-		self.acceleration = DataService.differentiate(self.velocity, self.time_increment)
-		self.tension = [float(i) for i in raw_force[1:-1]]
+			self.time_increment = float(raw_time[1])
+			self.time = [float(i) for i in raw_time[1:-1]]
+			self.displacement = [float(i) for i in raw_displacement[1:-1]]
+			self.velocity = DataService.differentiate(self.displacement, self.time_increment)
+			self.acceleration = DataService.differentiate(self.velocity, self.time_increment)
+			self.tension = [float(i) for i in raw_force[1:-1]]
 
 	def analyzeData(self, data={}):
 		#CODE WHEN SERIAL
-		# self.parseData(data)
+		self.parseData(data)
 		
 		### TBD
 		# Calculate lower and upper bounds for a particular model
@@ -218,7 +219,8 @@ class DataService:
 
 	@staticmethod
 	def differentiate(data, time_increment):
-		dData = [0]
+		dData = []
 		for i in range(1,len(data)):
-			dData.append((data[i]-data[i-1])/time_increment)
+			dData.append((data[i]-data[i-1])/time_increment[i-1])
+		dData.append(0)
 		return dData

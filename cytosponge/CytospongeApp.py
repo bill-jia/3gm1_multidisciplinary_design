@@ -7,7 +7,7 @@ import logging
 import sys
 
 class CytospongePanel(wx.Panel):
-	initialBMPX = 600
+	initialBMPX = 600se
 	initialBMPY = 400
 	initialPanelX = 1150
 	initialPanelY = 550
@@ -190,7 +190,7 @@ class CytospongePanel(wx.Panel):
 		self.parent.SetStatusText("Training finished")
 		self.DataService.analyzeData(self.serialCommsService.getIncomingData())
 		
-		self.DataService.analyzeData()
+		# self.DataService.analyzeData()
 		if self.loggedIn:
 			uploadThread = threading.Thread(name="upload-data", target = self.DataService.uploadData(), args=(None))
 			uploadThread.start()
