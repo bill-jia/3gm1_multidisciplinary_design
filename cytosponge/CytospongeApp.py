@@ -7,7 +7,7 @@ import logging
 import sys
 
 class CytospongePanel(wx.Panel):
-	initialBMPX = 600se
+	initialBMPX = 600
 	initialBMPY = 400
 	initialPanelX = 1150
 	initialPanelY = 550

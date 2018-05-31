@@ -22,13 +22,20 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   if (Serial.available() > 0) {
-    state = Serial.parseInt();
-    if (state == -1) {
+    int newState = Serial.parseInt();
+    if (newState == -1) {
       Serial.print("dt: " + String(time_increment) + " , ");
       Serial.print("d: " + array_to_string(displacement) + " , ");
       Serial.print("f: " + array_to_string(force));
       Serial.print("\n");
       state_duration = 0;
+      state = newState;
+    }
+    else if (newState == 1 && (state == 2 || state == 3 || state == 4)) {
+      state = newState;
+    }
+    else if (newState == 2 || newState == 3 || newState == 4) {
+      state = newState;
     }
   }
   //Serial.println(temp_state);
