@@ -124,7 +124,7 @@ String time_increment_array_to_string() {
 }
 
 void send_data() {
-  Serial.println("Sending Data");
+  // Serial.println("Sending Data");
   Serial.println("dt: " + time_increment_array_to_string() + " , ");
   Serial.println("d: " + displacement_array_to_string() + " , ");
   Serial.println("t: " + tension_array_to_string());
@@ -156,11 +156,11 @@ void calculateDisplacement() {
 
 void retract() {
   calculateDisplacement();
-  Serial.println(displacement_single);
+  // Serial.println(displacement_single);
   while (displacement_single > 10) {   //no need for feedback because the electrical system stores the displacement 
     readSensors();
     calculateDisplacement();
-    Serial.println(displacement_single);
+    // Serial.println(displacement_single);
     analogWrite(A1A, 0);    //need to make it retract until back to the baseline
     analogWrite(A1B, 150);
     analogWrite(B1A, 0);
@@ -192,8 +192,8 @@ void controller() {
   float actualForce = float_tension * tension_calibrate; //changes the tension reading from a 0-634 value to a 0-255 force byte (need to set the calibration parameter)
   byte actual_force = actualForce; //conversion of float to int 0-255
   byte error = modelForce() - actual_force; //160 = 500g. 226 = 1kg 292=1.5kg
-  Serial.print("Model Force: ");
-  Serial.println(modelForce());
+  // Serial.print("Model Force: ");
+  // Serial.println(modelForce());
   force = modelForce() + error * Kp;
   if (force > 255) {  //saturation
     force = 255;
@@ -250,7 +250,7 @@ void setup() {
     tension[i] = 0;     
     time_increment[i] = 0;
   }
-  Serial.println("Program start"); //need to comment this out when using serial with pi
+  // Serial.println("Program start"); //need to comment this out when using serial with pi
 } 
 
 void loop() {
@@ -283,7 +283,7 @@ void loop() {
       //oesphageal length? oes_length = Serial.parseInt();
       if (state == 2 || state == 3 || state == 4) { 
         state = newState;
-        Serial.print("Program Starting"); //sending back an ack
+        // Serial.print("Program Starting"); //sending back an ack
         digitalWrite(LED, HIGH);
         delay (500);
         digitalWrite(LED, LOW);
@@ -347,8 +347,8 @@ void loop() {
       retract();
     }
     else {
-        Serial.print("Error");
-        Serial.print(state);
+        // Serial.print("Error");
+        // Serial.print(state);
       }
   }
 
