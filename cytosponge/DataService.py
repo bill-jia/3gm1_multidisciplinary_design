@@ -79,15 +79,16 @@ class DataService:
 			self.testCase = DataService.testCaseMatrix[np.random.randint(3)]
 
 	def parseData(self, data):
-		print(data)
 		if len(data) > 0:
 			arrays = data.split(" , ")
 			raw_time = arrays[0].split(" ")
 			raw_displacement = arrays[1].split(" ")
 			raw_force = arrays[2].split(" ")
 
-			self.time_increment = np.mean(float(raw_time[1]))
-			
+			self.time_increment = float(raw_time[1])
+			self.time = [self.time_increment]
+			for idx in range(2, len(raw_time)-1):
+				self.time.append(self.time[idx-2] + float(raw_time[idx-1]))
 			self.displacement = [float(i) for i in raw_displacement[1:-1]]
 			self.velocity = DataService.differentiate(self.displacement, self.time)
 			self.acceleration = DataService.differentiate(self.velocity, self.time)
@@ -219,9 +220,9 @@ class DataService:
 		self.tensionGraphUpload = copy.deepcopy(self.tensionGraph)
 
 	@staticmethod
-	def differentiate(data, time_increment):
+	def differentiate(data, time):
 		dData = []
 		for i in range(1,len(data)):
-			dData.append((data[i]-data[i-1])/time_increment[i-1])
+			dData.append((data[i]-data[i-1])/(time[i] - time[i-1]))
 		dData.append(0)
 		return dData
