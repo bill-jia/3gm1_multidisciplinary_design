@@ -138,10 +138,10 @@ void stopMotor() {
 }
 
 void brake(byte force) {    //force must be from 0-255
-  analogWrite(A1A, force);
-  analogWrite(A1B, 0);
-  analogWrite(B1A, force);
-  analogWrite(B1B, 0);
+  analogWrite(A1A, 0);
+  analogWrite(A1B, force);
+  analogWrite(B1A, 0);
+  analogWrite(B1B, force);
 }
 
 void calculateDisplacement() {
@@ -157,9 +157,9 @@ void retract() {
     readSensors();
     calculateDisplacement();
     analogWrite(A1A, 0);    //need to make it retract until back to the baseline
-    analogWrite(A1B, 100);
-    analogWrite(B1A, 100);
-    analogWrite(B1B, 0);  
+    analogWrite(A1B, force);
+    analogWrite(B1A, 0);
+    analogWrite(B1B, force);  
   }
   //Serial.print(displacement_single); // for testing
 }
@@ -246,12 +246,13 @@ void setup() {
   Serial.println("Program start"); //need to comment this out when using serial with pi
   
   brake(255);
-  delay(5000);
+  delay(2000);
   stopMotor();
   Serial.println("Motor Stop");
 } 
 
 void loop() {
+   //brake(100);
   // put your main code here, to run repeatedly:
   //Stuff in main loop not permanent for now
 //

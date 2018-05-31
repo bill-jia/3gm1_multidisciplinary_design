@@ -79,17 +79,18 @@ class DataService:
 			self.testCase = DataService.testCaseMatrix[np.random.randint(3)]
 
 	def parseData(self, data):
+		print(data)
 		if len(data) > 0:
 			arrays = data.split(" , ")
 			raw_time = arrays[0].split(" ")
 			raw_displacement = arrays[1].split(" ")
 			raw_force = arrays[2].split(" ")
 
-			self.time_increment = float(raw_time[1])
-			self.time = [float(i) for i in raw_time[1:-1]]
+			self.time_increment = np.mean(float(raw_time[1]))
+			
 			self.displacement = [float(i) for i in raw_displacement[1:-1]]
-			self.velocity = DataService.differentiate(self.displacement, self.time_increment)
-			self.acceleration = DataService.differentiate(self.velocity, self.time_increment)
+			self.velocity = DataService.differentiate(self.displacement, self.time)
+			self.acceleration = DataService.differentiate(self.velocity, self.time)
 			self.tension = [float(i) for i in raw_force[1:-1]]
 
 	def analyzeData(self, data={}):
